@@ -1,0 +1,101 @@
+/* body {
+    margin: 0;
+    border: 0;
+} */
+
+/* DRAFT */
+#draft-main {
+    background: black; 
+    display: flex; 
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+#pack-frame {
+    width: 406px;
+    height: 551px;
+    background: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#unwrap {
+    background: gold;
+    width: 120px;
+    height: 40px;
+    border-color: darkgoldenrod;
+    border-radius: 8px;
+    color: black;
+    font-weight: 600;
+}
+
+.q-mark {
+    font-family: 'Times New Roman', Times, serif; 
+    font-size: 144pt; 
+    font-weight: 700;
+    color: white;
+}
+
+.btn-panel-row {
+    display: flex;
+    justify-content: center;
+}
+
+/* DECK ASSEMBLY */
+
+
+
+/* PLAY */
+#hand {
+    width: 460px;
+    height: 60px;
+    padding: 5px;
+    background: gray;
+    display: flex;
+    justify-content: start;
+    
+}
+
+#playmat {
+    background: #abcdef;
+    width: 400px;
+    height: 330px;
+    box-sizing: border-box;
+    padding: 20px;
+    margin-top: 50px;
+    display: grid;
+    grid-template-columns: 70px 70px 70px 70px 70px;
+    grid-template-rows: 70px 70px 70px 70px;
+    text-align: center;
+}
+
+.card {
+    background: wheat;
+    width: 35px;
+    height: 50px;
+    padding: 5px;
+    margin-right: 5px;
+    text-align: center;
+}
+
+
+
+
+
+.test {
+    background: hotpink;
+}
+
+
+
+
+
+
+/* Consider styles for cards IN HAND 
+                versus cards IN PLAY 
+      
+    width: 160px;   is a good start for cards in hand
+
+    Try adding max-width: 100% to an <img> element
+*/

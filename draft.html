@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draft</title>
+    <style>
+        body {
+            margin: 0;
+            border: 0;
+            background: black;
+            display: flex;
+            flex-direction: column;
+            
+            align-items: center;
+        }
+
+        #next-card {
+            background: gold;
+            width: 120px;
+            height: 40px;
+            border-color: darkgoldenrod;
+            border-radius: 8px;
+            color: black;
+            font-weight: 600;
+        }
+        #cards-seen {
+            width: 100%;
+            height: 221px;
+            background: gray;
+            display: flex;
+            justify-content: flex-start;
+            
+        }
+
+        .backing {
+            width: 159px;
+            height: 221px;
+            margin-left: -70px;
+            background: black;
+        }
+
+        .seen {
+            width: 159px;
+            height: 221px;
+        }
+
+        #cards-seen :first-child {
+            margin-left: 0px;
+        }
+    </style>
+</head>
+<body>
+    <div style="width: 223px; height: 310px; background-color: black; margin-top: 70px">
+        <img id="top-card" src=""/>
+    </div>
+    <br>
+    <button id="next-card">Next card</button>
+    <br><br>
+    <div id="cards-seen">
+
+    </div>
+</body>
+</html>
+
+<script src="drafting.js"></script>
