@@ -47,12 +47,12 @@
 
 /* DECK ASSEMBLY */
 #card-pool {
-    width: 1431px;
-    height: 1105px;
-    background: gray;
-    /* display: grid;
-    grid-template-columns: 159px 159px 159px 159px 159px 159px 159px 159px 159px;
-    grid-template-rows: 221px 221px 221px 221px 221px; */
+    width: 1272px;
+    height: 1326px;
+    
+    display: grid;
+    grid-template-columns: 159px 159px 159px 159px 159px 159px 159px 159px;
+    grid-template-rows: 221px 221px 221px 221px 221px;
 }
 
 #choose-basics {
