@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Screen</title>
+    <link rel="stylesheet" href="login-styles.css">
+    <!-- <script src="login-script.js"></script> -->
+    
+</head>
+<body>
+    <div id="headings">
+        <h3>Welcome to</h3>
+        <h1>MTG.games</h1>
+        <h2 id="now-you-can">
+            Ever <span id="want">wanted</span> to <span id="draft">draft</span> a <span id="pac">pack</span> of <span id="unltd">Unlimited</span>?<br>
+            <span id="now">Now</span> you <span id="ucan">can</span>!
+        </h2>
+    </div>
+
+    <div class="login-reg-box">
+        <form id="login-form" class="login-reg-form" >
+            <input id="un-field" class="text-input-box" type="text" name="name" placeholder="Username"/><br>
+            <input id="pw-field" class="text-input-box" type="password" name="password" placeholder="Password"/><br>
+            <button id="login-btn" class="form-btn" type="submit">LOG IN</button>
+            <span class="text-below">Don't have an account yet? Click <a id="show-reg" class="toggle-form" href="#">here</a> to sign up!</span>
+        </form>
+    </div>
+
+    <div class="login-reg-box" hidden="true">
+        <form id="reg-form" class="login-reg-form" action="submit" style="display: none">
+            <input class="text-input-box" type="text" name="name" placeholder="Username"/><br>
+            <input class="text-input-box" type="email" name="email" placeholder="Email address"/><br>
+            <input class="text-input-box" type="password" name="password" placeholder="Password"/><br>
+            <input id="reg-btn" class="form-btn" type="submit" value="SIGN UP"/>
+            <div class="text-below">Already have an account? Click <a id="show-login" class="toggle-form" href="#">here</a> to log in!</div>
+        </form>
+    </div>
+</body>
+</html>
+
+<script src="login.js"></script>

@@ -7,6 +7,9 @@
     <title>Ready?</title>
     <link rel="stylesheet" href="styles.css"/>
     <style>
+        body {
+            background: black;
+        }
 
         #test {
             background: linear-gradient(#f0d0aa, #d1b391);
@@ -17,23 +20,24 @@
 </head>
 
 <body>
-    <div id="draft-main">
+    <div id="sealed-section">
         <span class="q-mark">?</span>
         <div id="pack-frame">
             <img src="images/mtg-pack.jpeg" alt="Sealed Unlimited Booster Pack">
         </div>
         <span class="q-mark">?</span>
 
-        
-
     </div>
+
     <br>
+
     <div class="btn-panel-row">
-        <button id="unwrap">Open pack!</button>
+        <button id="unwrap-btn">Open pack!</button>
     </div>
     
+    
     <script>
-        let btnOpenPack = document.getElementById('unwrap');
+        let btnOpenPack = document.getElementById('unwrap-btn');
         
         btnOpenPack.addEventListener( 'click', event => {
             window.location.href = "draft.html";

@@ -3,9 +3,8 @@
     border: 0;
 } */
 
-/* DRAFT */
-#draft-main {
-    background: black; 
+/* SEALED PACK */
+#sealed-section {
     display: flex; 
     justify-content: space-evenly;
     align-items: center;
@@ -20,11 +19,11 @@
     align-items: center;
 }
 
-#unwrap {
+#unwrap-btn {
     background: gold;
     width: 120px;
     height: 40px;
-    border-color: darkgoldenrod;
+    border: 3px solid darkgoldenrod;
     border-radius: 8px;
     color: black;
     font-weight: 600;
@@ -42,8 +41,43 @@
     justify-content: center;
 }
 
-/* DECK ASSEMBLY */
+/* DRAFT CARDS */
 
+
+
+/* DECK ASSEMBLY */
+#card-pool {
+    width: 1431px;
+    height: 1105px;
+    background: gray;
+    /* display: grid;
+    grid-template-columns: 159px 159px 159px 159px 159px 159px 159px 159px 159px;
+    grid-template-rows: 221px 221px 221px 221px 221px; */
+}
+
+#choose-basics {
+    width: 1000px;
+    height: 221px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.basic-land {
+    width: 159px;
+    height: 221px;
+}
+
+.btn-class {
+    width: 140px;
+    height: 40px;
+    background: #2b6382;
+    border-color: #354e53;
+    border-radius: 8px;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+}
 
 
 /* PLAY */
@@ -85,6 +119,7 @@
 
 .test {
     background: hotpink;
+    
 }
 
 
@@ -98,4 +133,14 @@
     width: 160px;   is a good start for cards in hand
 
     Try adding max-width: 100% to an <img> element
+
+    .cover {
+        object-fit: cover;
+    }
+
+    .contain {
+        object-fit: contain;
+    }
+
+    element.remove()
 */
