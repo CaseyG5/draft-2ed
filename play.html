@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Play Test</title>
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        * {
+            background: #1E1E1E;
+            color: lightgray;
+        }
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="main-section" >
+        <div id="opp-playarea" >
+            <div id="opp-graveyard" style="width: 150px; padding: 5px;">
+                Cards in opponent's Graveyard show up here<br>
+                <ol>
+                    <li>card 1</li>
+                    <li>card 2</li>
+                    <li>card 3</li>
+                    <li>card 4</li>
+                </ol>
+                Toggle button to show cards in Exile
+            </div>
+
+            <div id="opp-permanents" >
+                <div id="opp-lands">
+                    Opponents lands go here
+                </div>
+                <div id="opp-non-lands">
+                    Opponents non-land permanents go here
+                </div>
+            </div>
+        </div>
+
+    
+
+        <div id="my-playarea" >
+            <div id="my-cards-in-play" >
+                <div id="non-lands-in-play">
+                    NL
+                    <!-- <img src="test.jpg" width="90px" height="125px" alt="example size"/> -->
+                </div>
+
+                <div id="lands-in-play">
+                    L
+                    <!-- <img src="test.jpg" width="72px" height="100px" alt="example size"/> -->
+                </div>
+            </div>
+            
+            <div id="my-mana" >
+                <div class="mana-box">
+                    <span id="colorless-qty">0</span>
+                    <img id="c-symbol" src="mana/C.png" width="35px" height="35px" alt="diamond"/>
+                </div>
+                <div class="mana-box">
+                    <span id="white-qty">0</span>
+                    <img id="w-symbol" src="mana/W.webp" width="35px" height="35px" alt="sun"/>
+                </div>
+                <div class="mana-box">
+                    <span id="blue-qty">0</span>
+                    <img id="u-symbol" src="mana/U.webp" width="35px" height="35px" alt="droplet"/>
+                </div>
+                <div class="mana-box">
+                    <span id="black-qty">0</span>
+                    <img id="b-symbol" src="mana/B.webp" width="35px" height="35px" alt="skull"/>
+                </div>
+                <div class="mana-box">
+                    <span id="red-qty">0</span>
+                    <img id="r-symbol" src="mana/G.webp" width="35px" height="35px" alt="flame"/>
+                </div>
+                <div class="mana-box">
+                    <span id="green-qty">0</span>
+                    <img id="g-symbol" src="mana/R.png" width="35px" height="35px" alt="tree"/>
+                </div>
+            </div>
+        </div>
+
+        <div id="hand">
+            <!-- 
+            Cards in hand show up here 
+            
+            <img src="images/600.jpeg" width="126px" height="175px" alt="example card" style="border: 0px; border-radius: 6px"/>  
+
+            <div class="card-in-hand" draggable="true" style="width: 126px; height: 175px">1</div>
+            <div class="card-in-hand" draggable="true" style="width: 126px; height: 175px">2</div>
+            <div class="card-in-hand" draggable="true" style="width: 126px; height: 175px">3</div>
+            ETC
+            -->
+        </div>
+
+        <br>
+
+        
+
+        
+    </div>
+
+    <div id="right-sidebar" >
+        <div id="game-info">
+            Time left this round:<br>
+            <div id="round-timer">
+                * Timer goes here *
+            </div>
+            <br>
+            <div id="info-results-etc">More game info, e.g. results of finished matches this round</div>
+        </div>
+
+        <form id="chat-box">
+            <!-- @TODO: prevent resizing of read-only text area -->
+            <textarea id="chat-log" name="chat-log" cols="18" rows="12" disabled="true">Log of chat and comments between you and opponent<br>
+                tcgplaya: what they said, ipsem lorem...
+                mtg4life: what they said, ipsem lorem...
+            </textarea>
+            <input id="chat-input" name="chat-input" type="text" placeholder="Type something here"><br>
+            <span class="instruction">Press Enter to send.</span>
+        </form>
+         <br>
+
+        <div id="my-graveyard" style="display: flex" >
+            <!--  Cards in your Graveyard show up here  -->
+            
+        </div>
+
+        <div id="my-exiles" style="display: none" >
+        </div>
+
+        <button id="toggle-gy-exile">Show Exiled</button>
+
+        <!-- Draws for the turn will happen automatically but for now... -->
+        <div style="width: 180px; display: flex; justify-content: space-between">
+            <button id="draw-btn" style="width: 90px" >DRAW A CARD</button>
+
+            <button id="tutor-btn" style="width: 60px">TUTOR</button>            
+        </div>
+
+        <!-- <canvas >  ONLY for BITMAP images ? ?  </canvas> -->
+    </div>
+        
+</body>
+</html>
+
+ <script src="play.js"></script>
+
+
+
+
+
+
+
+
+
+    <!--OLD
+    
+        <div id="your-hand">
+            <div class="card-in-hand">
+                <img class="card-size" src="https://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid=692" alt="">
+            </div>
+            <div class="card-in-hand">
+                <img class="card-size" src="https://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid=600" alt="">
+            </div>
+            <div class="card-in-hand">
+                <img class="card-size" src="https://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid=886" alt="">
+            </div>
+            <div class="card-in-hand">
+                <img class="card-size" src="https://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid=719" alt="">
+            </div>
+            <div class="card-in-hand">
+                <img class="card-size" src="https://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid=631" alt="">
+            </div>
+        </div>
+
+     -->

@@ -81,45 +81,192 @@
 
 
 /* PLAY */
-#hand {
-    width: 460px;
-    height: 60px;
+#main-section {
+    width: calc(100vw - 220px); 
+    display: flex; 
+    flex-direction: column;
+}
+
+    #opp-playarea {
+        min-width: 700px; 
+        min-height: 240px; 
+        display: flex;
+    }
+
+        #opp-permanents {
+            width: calc(100vw - 370px); 
+            border-left: 2px solid #555;
+            display: flex; 
+            flex-direction: column; 
+            text-align: center;
+        }
+
+            #opp-lands {
+                height: 110px;
+            }
+            
+            #opp-non-lands {
+                height: 135px;
+            }
+
+    #my-playarea {
+        width: calc(100vw - 220px);
+        height: 270px;
+        box-sizing: border-box;
+        border-top: 2px solid #555;
+        border-bottom: 2px solid #555;
+        display: flex; 
+        justify-content: space-between; 
+        /* margin-top: 50px; */
+        /* display: grid;
+        grid-template-columns: 70px 70px 70px 70px 70px;
+        grid-template-rows: 70px 70px 70px 70px; */
+        text-align: center;
+    }
+
+        #my-cards-in-play {
+            min-width: 812px;
+            width: calc(100vw - 290px);
+            display: flex; 
+            flex-direction: column
+        }
+
+            #non-lands-in-play {
+                height: 145px;
+                padding: 5px;
+                display: flex;
+                justify-content: flex-start;
+            }
+            #non-lands-in-play > img {
+                width: 90px; 
+                height: 125px;
+                margin-right: 18px;
+                border-radius: 4px;
+            }
+            
+            #lands-in-play {
+                height: 110px;
+                padding: 5px;
+                display: flex;
+                justify-content: flex-start;
+            }
+            #lands-in-play > img {
+                width: 72px; height: 100px;
+                margin-right: 15px;
+                border-radius: 3px;
+            }
+
+            #my-mana {
+                width: 60px; 
+                min-height: 250px; 
+                padding: 5px;
+                display: flex; 
+                flex-direction: column;
+                justify-content: space-between;
+            }
+
+                .mana-box {
+                    
+                    border: none;
+                    display: flex;
+                    flex-direction: row;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+    #hand {
+        min-width: 917px;
+        height: 185px;
+        padding: 5px;
+        display: flex;
+        justify-content: start;
+        text-align: center;
+    }
+    #hand > img {
+        width: 126px;
+        height: 175px;
+        margin-right: 3px;
+        border-radius: 6px;
+    }
+          
+        /* .card-in-hand {
+            width: 126px;
+            height: 175px;
+            margin-right: 3px;
+            border-radius: 6px;
+        } */
+
+#right-sidebar {
+    width: 220px; 
+    border-left: 2px solid #555;
     padding: 5px;
-    background: gray;
-    display: flex;
-    justify-content: start;
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between;
+    align-items: center;
+}
+
+    #chat-box {
+        width: 185px;
+        height: 210px;
+        padding: 5px;
+    }
+
+    #chat-log {
+        width: 175px;
+        resize: none;
+        font-family:'Times New Roman', Times, serif;
+        font-size: 14px;
+    }
+
+    .chat-name {
+        color: hotpink;
+    }
+
+    #my-graveyard, #my-exiles {
+        width: 169px;
+        height: 221px;
+        padding: 5px 10px;
+        background: #555;
+        
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        overflow-x: hidden;
+        overflow-y: scroll;
+        scrollbar-width: none;  /* 'none' may not work because this property is only supported in Firefox */
+    }
+
     
+
+    #my-graveyard > img,
+    #my-exiles > img {
+        width: 159px;
+        height: 221px;
+        margin-top: -140px;
+        border-radius: 7px;
+    }
+    #my-graveyard :first-child,
+    #my-exiles :first-child {
+        margin-top: 0px;
+    }
+    
+
+.tapped {
+    transform: rotate(90deg);
 }
 
-#playmat {
-    background: #abcdef;
-    width: 400px;
-    height: 330px;
-    box-sizing: border-box;
-    padding: 20px;
-    margin-top: 50px;
-    display: grid;
-    grid-template-columns: 70px 70px 70px 70px 70px;
-    grid-template-rows: 70px 70px 70px 70px;
-    text-align: center;
+button {
+    border: 3px solid lightseagreen;
+    border-radius: 5px;
 }
-
-.card {
-    background: wheat;
-    width: 35px;
-    height: 50px;
-    padding: 5px;
-    margin-right: 5px;
-    text-align: center;
-}
-
-
 
 
 
 .test {
     background: hotpink;
-    
+    color: burlywood;
+    rotate: 90deg;
 }
 
 
@@ -127,8 +274,7 @@
 
 
 
-/* Consider styles for cards IN HAND 
-                versus cards IN PLAY 
+/*  
       
     width: 160px;   is a good start for cards in hand
 
@@ -143,4 +289,7 @@
     }
 
     element.remove()
+
+    For consistency, it is a good idea to set margins and padding to 0 on ALL elements, 
+    then add these back in when styling particular controls:
 */
