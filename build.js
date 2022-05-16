@@ -1,8 +1,15 @@
 let altPressed = false;
 
-let deck = [806, 672, 744, 657, 782, 751, 623, 780, 610, 755, 869, 804, 677, 606, 856,
-            792, 794, 651, 763, 678, 752, 782, 629, 774, 776, 878, 660, 829, 714, 722,
-            750, 684, 684, 765, 785, 754, 651, 768, 804, 660, 672, 778, 827, 797, 613];
+/*
+    my picks:    [744,780,683,751,750,  853,770,771,683,716,  787,717,719,715,674] */
+let deck =  [804,730,768,847,832,  782,814,598,817,680,  607,705,713,836,693,
+             743,802,673,763,851,  746,746,850,636,679,  890,849,702,896,877,
+             859,658,782,675,673,  769,795,857,897,875,  670,651,894,891,893]
+
+
+// let deck = [806, 672, 744, 657, 782,  751, 623, 780, 610, 755,  869, 804, 677, 606, 856,
+//             792, 794, 651, 763, 678,  752, 782, 629, 774, 776,  878, 660, 829, 714, 722,
+//             750, 684, 684, 765, 785,  754, 651, 768, 804, 660,  672, 778, 827, 797, 613];
 
 let rejects = [];
 // let deckString = [ ...localStorage.getItem("cards-drafted"), ...localStorage.getItem("pack2"), ...localStorage.getItem("pack3") ];
@@ -47,13 +54,11 @@ for ( let c = 0; c < 45; c++ ) {
 window.addEventListener( 'keydown', keyEvent => {
     if(keyEvent.key == "Alt") {
         altPressed = true;
-        console.log("Alt key is down");
     }
 });
 window.addEventListener( 'keyup', ke => {
     if(ke.key == "Alt") {
         altPressed = false;
-        console.log("Alt key is up");
     }
 })
 
@@ -63,8 +68,8 @@ let swampQty = document.getElementById('swamp-qty');
 let mountainQty = document.getElementById('mountain-qty');
 let forestQty = document.getElementById('forest-qty');
 
-let exclude = document.getElementById('thin-deck');
-let submit = document.getElementById('submit-deck');
+let excludeBtn = document.getElementById('thin-deck');
+let submitBtn = document.getElementById('submit-deck');
 
 function adjustQuantity(element) {
     // get current quantity
@@ -102,24 +107,26 @@ forestQty.addEventListener( 'click', e => {
     adjustQuantity(forestQty);
 });
 
-// @TODO: include total card count of cards in pool + lands chosen
 
-
-exclude.addEventListener( 'click', e => {
+excludeBtn.addEventListener( 'click', e => {
     // eliminate selected cards from pool
-    rejects.forEach( number => {
-        let index = deck.indexOf(number, 0);   // find its location
+    rejects.forEach( cardNum => {
+        let index = deck.indexOf(cardNum, 0);   // find its location
         deck.splice( index, 1);                 // then remove it
     });
-    exclude.hidden = true;
+
+    excludeBtn.hidden = true; // hide exclude button since it's no longer needed
+    excluded.hidden = true;   // hide # of cards cut for the same reason;
+
     // redraw cards on grid (picks - cuts)
     myPicks.innerHTML = "";
     for( let c = 0; c < deck.length; c++ ) showCardOnGrid(c);
 });
 
-// @TODO: Fix Submit - not working
-submit.addEventListener( 'submit', e => {
+// Submit all selections and display deck
+submitBtn.addEventListener( 'submit', e => {
     e.preventDefault();
+
     // add lands to deck and proceed to first round
     let p = Number( plainsQty.innerText );
     let i = Number( islandQty.innerText );
@@ -135,19 +142,22 @@ submit.addEventListener( 'submit', e => {
     for( let k = 0; k < f; k++ ) deck.push(889);
 
     // show lands added
-    for( let k = deck.length-total; k < deck.length; k++ ) showCardOnGrid(k);
+    for( let k = (deck.length - total); k < deck.length; k++ ) showCardOnGrid(k);
+    // send deck submission event to server with decklist (array)
 });
 
 
 
 function showCardOnGrid( c ) {
-    let cardFrame = document.createElement('div');
-    let card = document.createElement('img');
+    let cardFrame = document.createElement('div');   // @TODO -- probably don't need this
+    let card = document.createElement('img');        // @TODO -- just add .card class to img element
     
     cardFrame.style = "width: 159px; height: 221px; background: black";            
     card.style = "width: 159px; height: 221px; opacity: 1";         // NOTE: width / height attributes for images do not work here!
     card.src = `images/${deck[c]}.jpeg`;
-    card.id = `${deck[c]}`
+    card.id = `${deck[c]}`;
+
+        console.log(card.id + ", ");
 
     cardFrame.appendChild(card);
     myPicks.appendChild(cardFrame);
