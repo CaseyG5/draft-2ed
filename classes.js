@@ -107,6 +107,8 @@ class Land extends Card {
 
 
 // Deck class
+// (Formal and not needed until later)
+
 // class Deck {
         // deckName : String
 //     // cards : array of Card
@@ -166,9 +168,9 @@ class User {
         // return securePasswordHashFunction( pw );
     }
 
-    logIn(userName, password) {
-        const retrievedHash = lookUpHash(userName);
-        if( this.pwHash == retrievedHash) {
+    logIn(password) {
+        
+        if( this.pwHashFunc(password) === this.pwHash) {
             // log them in
         }
         // else display error message
@@ -176,6 +178,26 @@ class User {
 
     editProfile() {
 
+    }
+}
+
+// Basic Player class
+class BasicPlayer {
+    constructor(name, id) {
+        this.name = name;
+        this.id = id;
+        this.gamesWon = 0;
+        this.gamesPlayed = 0;
+    }
+
+    addRoundScore(won, played) {
+        this.gamesWon += won;
+        this.gamesPlayed += played;
+    }
+
+    calcGWP() {
+        if(this.gamesWon == 0 || this.gamesPlayed == 0) return 0;
+        return this.gamesWon / this.gamesPlayed;
     }
 }
 
@@ -267,36 +289,96 @@ class Tournament {
     // countDownTimer
     // roundNumber
     // endTime
-    constructor( id, players ) {
+    constructor( id, players ) {  // players here is an array of player names
         this.id = id;
-        this.players = players;
-        this.pairingsRound1 = [];
-        this.pairingsRound2 = [];
-        this.pairingsRound3 = [];
-        this.timer = new Timer(30,0);
+        this.players = [];
+        for(let p=0; p < players.length; p++ ) {      // translate each name into a BasicPlayer object which contains the name
+            this.players.push( new BasicPlayer(players[i], i) );
+        }
+        this.currentPack = 1;
+        this.theirPacks = [];
+        this.playersReadyToPass = 0;
+        this.pairings = [];
+        // this.pairingsRound2 = [];
+        // this.pairingsRound3 = [];
+        this.timer = new Timer(30,0);   // set for 30 min?  (10 min / pack)
         this.startTime;     // Date
         this.round = 1;
         this.endTime;       // Date
     }
+
     startDraft() {
         // record start time
         this.startTime = Date.now();
-        // start timer for 30 min?  (10 min / pack)
+        // start timer 
         this.timer.start();
     }
 
+    getCurrentTime() {
+        return this.timer.getTime();
+    }
+
+    getNumPlayersReady() {
+        return this.playersReadyToPass;
+    }
+
+    incNumPlayersReady() {
+        this.playersReadyToPass++;
+    }
+
+    resetNumPlayersReady() {
+        this.playersReadyToPass = 0;
+    }
+
+    // @TODO:  Use 2 for loops instead, if that's more efficient
+    rotatePacks() {    // 'left' for clock-wise; 'right' for CCW            8  1
+        let temp = this.theirPacks[0];                              //    7      2
+                                                                    //    6      3
+        if(this.currentPack === 2) {    // Rotate R (CCW)                   5  4
+            this.theirPacks[0] = this.theirPacks[1];
+            this.theirPacks[1] = this.theirPacks[2];
+            this.theirPacks[2] = this.theirPacks[3];
+            this.theirPacks[3] = this.theirPacks[4];
+            this.theirPacks[4] = this.theirPacks[5];
+            this.theirPacks[5] = this.theirPacks[6];
+            this.theirPacks[6] = this.theirPacks[7];
+            this.theirPacks[7] = temp;
+        } else {                        // currentPack is 1 or 3.  Rotate L (CW)
+            this.theirPacks[0] = this.theirPacks[7];
+            this.theirPacks[7] = this.theirPacks[6];
+            this.theirPacks[6] = this.theirPacks[5];
+            this.theirPacks[5] = this.theirPacks[4];
+            this.theirPacks[4] = this.theirPacks[3];
+            this.theirPacks[3] = this.theirPacks[2];
+            this.theirPacks[2] = this.theirPacks[1];
+            this.theirPacks[1] = temp;
+        }
+    }
+
+    // Methods for 3-round tournament, round-robin
     randomizePlayers() {
         let random1;
         let random2;
         let temp = 0;
 
-        for(let i = 0; i < 8; i++) {
+        for(let i = 0; i < 16; i++) {
             random1 = Math.floor(Math.random() * 8);
             random2 = Math.floor(Math.random() * 8);
+
+            // random swap
             temp = players[random1];
             players[random1] = players[random2];
             players[random2] = temp;
         }
+    }
+
+    calcPairings() {
+        if(this.round = 1) this.randomizePlayers();                     
+        else this.players.sort( (a, b) =>  a.calcGWP() > b.calcGWP() );  // sort by GWP in descending order
+        pairings.push( new Pairing(players[0], players[1]) );           // players 1 & 2,
+        pairings.push( new Pairing(players[2], players[3]) );           // players 3 & 4, 
+        pairings.push( new Pairing(players[4], players[5]) );           // etc.
+        pairings.push( new Pairing(players[6], players[7]) );
     }
 
     startTournament() {
@@ -322,16 +404,23 @@ class Tournament {
     }
 
     completeRound() {
-        // if round timer ends...
+        // if round timer has ended...
+        
             // Are any matches still in progress?
             // If yes, current turn = Turn 0  for those pairings
+            // Wait for those matches to finish
 
-        // else proceed to next round
+         // (all matches have finished)
+        if( this.timer.timeLeft() )  this.timer.stop();     // stop timer
+        
         // inc round#
         this.round++;
+        //proceed to next round
         // if round > 3  then end tournament and calc results table, showStandings()
-        // else calc pairings for next round
-            // and reset timer
+        // else calc pairings and proceed to next round
+            
+            this.pairings.length = 0;   //clear pairings
+            calcPairings()
     }
 
 
