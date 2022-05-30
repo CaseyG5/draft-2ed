@@ -1,4 +1,4 @@
-import Timer from './timer';
+import Timer from './public/timer.js';
 
 
 // Card class
@@ -27,12 +27,12 @@ class Card {
         //console.log(`Card "${this.name}" created`);
     }
 
-    constructor(cardData) {
-        this.id = cardData["multiverseid"];
-        this.name = cardData["name"];
-        this.cost = cardData["manaCost"];
-        this.rulesText = cardData["text"];
-    }
+    // constructor(cardData) {
+    //     this.id = cardData["multiverseid"];
+    //     this.name = cardData["name"];
+    //     this.cost = cardData["manaCost"];
+    //     this.rulesText = cardData["text"];
+    // }
 
     getCostAsString() {
         if(this.type == "Land") return "";
@@ -190,6 +190,13 @@ class BasicPlayer {
         this.gamesPlayed = 0;
     }
 
+    rollDice() {
+        let die1 = Math.floor(Math.random() * 6) + 1;
+        let die2 = Math.floor(Math.random() * 6) + 1;
+        console.log(`Player ${this.name} rolls a ${die1} and a ${die2} = ${die1 + die2}`);
+        return die1 + die2;
+    }
+
     addRoundScore(won, played) {
         this.gamesWon += won;
         this.gamesPlayed += played;
@@ -197,7 +204,7 @@ class BasicPlayer {
 
     calcGWP() {
         if(this.gamesWon == 0 || this.gamesPlayed == 0) return 0;
-        return this.gamesWon / this.gamesPlayed;
+        return this.gamesWon / this.gamesPlayed;    // @TODO: format to 2 or 3 decimal points
     }
 }
 
@@ -265,21 +272,21 @@ class Pairing {
     // stack: array of Card
     // chatLog: string
     // endOfRoundTurn: number
-    // matchResult: array[2] of number, e.g. [1,0] for win or [0.5, 0.5] for draw
+    // matchResult: array[2] of number
     constructor(player1, player2) {
        this.player1 = player1;
        this.player2 = player2;
-       this.whosTurn = "";
+       this.whosTurn = "";      // @TODO: start with highest dice roll and then "toggle"
        this.turnCount = 0;
        this.turnEOR = 0;  // if time's up
-       this.stack = [];
+       //this.stack = [];         // for spells on the stack
        this.chatLog = "";
-       this.matchResult = [];
+       this.matchResult = [];  // e.g. [1,0] for win or [0.5, 0.5] for draw
     }
 }
 
 // Draft Tournament
-class Tournament {
+export default class Tournament {
     // tournamentID : number
     // allPlayers: array[8] of Player or username     // can use array[2] for testing
     // pairingsRound1: array[4] of Pairing (players randomized)
@@ -384,7 +391,11 @@ class Tournament {
     startTournament() {
         
         // handle pairings for 1st round
-        this.pairingsRound1 = randomizePlayers();
+        this.pairings = this.calcPairings();
+
+        // @TODO: send players their opponent or
+        // setup a match between players in each pairing
+        // separate "rooms" for matches?
 
         // (players get situated lol)
         // i.e. play screen loads with data
@@ -393,14 +404,16 @@ class Tournament {
     }
 
     startRound() {
+        
+        // @TODO: send timer reset to clients in draft group
+
         // reset timer for 1st round
         this.timer.reset(50, 0);
-        // send timer reset to clients in draft group
 
         // start timer
         this.timer.start();     
         
-        // @TODO: Send timer data periodically
+        // @TODO: Send timer data periodically if necessary
     }
 
     completeRound() {
