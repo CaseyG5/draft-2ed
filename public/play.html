@@ -1,4 +1,4 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,29 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Play Test</title>
     <link rel="stylesheet" href="styles.css">
-</head> -->
+</head>
 
-<div id="play">
+<body id="play">
 
     <div id="main-section" >
         <div id="opp-playarea" >
-            <div id="opp-graveyard" style="width: 150px; padding: 5px;">
-                Cards in opponent's Graveyard show up here<br>
-                <ol>
-                    <li>card 1</li>
-                    <li>card 2</li>
-                    <li>card 3</li>
-                    <li>card 4</li>
-                </ol>
-                Toggle button to show cards in Exile
+            <div id="opp-gy-exile">
+                <div id="opp-graveyard" class="disable-scrollbars" style="display: flex">
+                    Opponent's Graveyard
+                    
+                </div>
+                <div id="opp-exiles" class="disable-scrollbars" style="display: none" >
+                    Opponent's Exile zone
+                </div>
+        
+                <button id="toggle-opp-gy-exile">Show Exiled</button>
             </div>
 
             <div id="opp-permanents" >
                 <div id="opp-lands">
-                    Opponents lands go here
+                    Opp's lands
                 </div>
                 <div id="opp-non-lands">
-                    Opponents non-land permanents go here
+                    Opp's non-land perm.
                 </div>
             </div>
         </div>
@@ -38,12 +39,12 @@
         <div id="my-playarea" >
             <div id="my-cards-in-play" >
                 <div id="non-lands-in-play">
-                    NL
+                    
                     <!-- <img src="test.jpg" width="90px" height="125px" alt="example size"/> -->
                 </div>
 
                 <div id="lands-in-play">
-                    L
+                    
                     <!-- <img src="test.jpg" width="72px" height="100px" alt="example size"/> -->
                 </div>
             </div>
@@ -51,27 +52,27 @@
             <div id="my-mana" >
                 <div class="mana-box">
                     <span id="colorless-qty">0</span>
-                    <img id="c-symbol" src="mana/C.png" width="35px" height="35px" alt="diamond"/>
+                    <img id="c-symbol" class="symbol" src="mana/C.png" width="35px" height="35px" alt="diamond"/>
                 </div>
                 <div class="mana-box">
                     <span id="white-qty">0</span>
-                    <img id="w-symbol" src="mana/W.webp" width="35px" height="35px" alt="sun"/>
+                    <img id="w-symbol" class="symbol" src="mana/W.webp" width="35px" height="35px" alt="sun"/>
                 </div>
                 <div class="mana-box">
                     <span id="blue-qty">0</span>
-                    <img id="u-symbol" src="mana/U.webp" width="35px" height="35px" alt="droplet"/>
+                    <img id="u-symbol" class="symbol" src="mana/U.webp" width="35px" height="35px" alt="droplet"/>
                 </div>
                 <div class="mana-box">
                     <span id="black-qty">0</span>
-                    <img id="b-symbol" src="mana/B.webp" width="35px" height="35px" alt="skull"/>
+                    <img id="b-symbol" class="symbol" src="mana/B.webp" width="35px" height="35px" alt="skull"/>
                 </div>
                 <div class="mana-box">
                     <span id="red-qty">0</span>
-                    <img id="r-symbol" src="mana/G.webp" width="35px" height="35px" alt="flame"/>
+                    <img id="r-symbol" class="symbol" src="mana/R.png" width="35px" height="35px" alt="flame"/>
                 </div>
                 <div class="mana-box">
                     <span id="green-qty">0</span>
-                    <img id="g-symbol" src="mana/R.png" width="35px" height="35px" alt="tree"/>
+                    <img id="g-symbol" class="symbol" src="mana/G.webp" width="35px" height="35px" alt="tree"/>
                 </div>
             </div>
         </div>
@@ -94,47 +95,75 @@
 
     <div id="right-sidebar" >
         <div id="game-info">
-            Time left this round:<br>
-            <div id="round-timer">
-                * Timer goes here *
-            </div>
+            Time left this round: &nbsp; &nbsp;<span id="round-min">49</span>:<span id="round-sec">59</span><br>
+            <!-- <div id="round-timer">
+                
+            </div> -->
             <br>
             <div id="info-results-etc">More game info, e.g. results of finished matches this round</div>
         </div>
 
-        <form id="chat-box">
+        <form id="chat-box" >
             <!-- @TODO: prevent resizing of read-only text area -->
-            <textarea id="chat-log" name="chat-log" cols="18" rows="12" disabled="true">Log of chat and comments between you and opponent<br>
-                tcgplaya: what they said, ipsem lorem...
-                mtg4life: what they said, ipsem lorem...
-            </textarea>
+            <div id="chat-log" cols="18" rows="12" >Log of chat and comments
+                between you and opponent ...<br>
+                tcgplaya: this is fantastic!<br>
+                mtg4life: bro tell me about it!<br>
+                <!-- @TODO: How to autoscroll to bottom of chat log? -->
+            </div>
             <input id="chat-input" name="chat-input" type="text" placeholder="Type something here"><br>
             <span class="instruction">Press Enter to send.</span>
         </form>
          <br>
 
-        <div id="my-graveyard" style="display: flex" >
+        <div id="my-graveyard" class="disable-scrollbars" style="display: flex" >
             <!--  Cards in your Graveyard show up here  -->
             
         </div>
 
-        <div id="my-exiles" style="display: none" >
+        <div id="my-exiles" class="disable-scrollbars" style="display: none" >
         </div>
 
         <button id="toggle-gy-exile">Show Exiled</button>
 
         <!-- Draws for the turn will happen automatically but for now... -->
-        <div style="width: 180px; display: flex; justify-content: space-between">
-            <button id="draw-btn" style="width: 90px" >DRAW A CARD</button>
-
-            <button id="tutor-btn" style="width: 60px">TUTOR</button>            
+        <div style="width: 180px; display: flex; flex-wrap: wrap">
+            <button id="mull-btn" class="action-btn">Mull</button>
+            <button id="scry-btn" class="action-btn">Scry</button>
+            <button id="untap-btn" class="action-btn">Untap</button>
+            <button id="draw-btn" class="action-btn">Draw 1</button> 
+            <button id="view3-btn" class="action-btn">See 3</button>
+            <button id="tutor-btn" class="action-btn">Srch Lib</button>
+            <button id="shuffle-btn" class="action-btn">Shuffle</button>  
+            
         </div>
+        
+        <dialog id="scry-modal" class="play-modal">
+            <img id="scryed-card" src="" alt="">
+            <form class="modal-btn-panel" method="dialog">
+                <button id="unshift-btn" class="action-btn" value="default">Bottom it</button>
+                <button id="ontop-btn" class="action-btn" value="cancel">Leave on top</button>
+            </form>
+        </dialog>
 
+        <dialog id="view3-modal" class="play-modal">
+            <div id="three-cards">
+
+            </div>
+            <form class="modal-btn-panel" method="dialog">
+                <label for="spec-order" style="color: white">Current order: 3rd, 2nd, 1st</label><br>
+                <input type="text" id="spec-order" placeholder="2,1,3">
+                <button id="shuffle-btn-2" class="action-btn" value="cancel">Shuffle</button>
+                <button id="reorder-btn" class="action-btn" value="default">Reorder</button>
+                <button id="asis-btn" class="action-btn" value="cancel">Leave as is</button>
+            </form>
+        </dialog>
+        
         <!-- <canvas >  ONLY for BITMAP images ? ?  </canvas> -->
     </div>
-     <!-- <script src="play.js"></script>     -->
-</div>
-<!-- </html> -->
+     <script src="play.js"></script>    
+</body>
+</html>
 
 
 
