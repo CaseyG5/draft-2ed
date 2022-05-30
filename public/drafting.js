@@ -166,10 +166,6 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
                 for( cardObj of cardObjects ) {
                     cardObj.removeEventListener('click', cardSelectHandler);
                 }
-
-                // document.getElementsByClassName('seen').forEach( imgElem => {
-                //     imgElem.removeEventListener('click', cardSelectHandler);
-                // });
             }
         });
         cardObjects.push(card);
@@ -177,16 +173,6 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
     console.log("EXITING draftOnePack()");
     return;
 }
-
-
-/*TEST RUN
-    my picks:    [744,780,683,751,750,  853,770,771,683,716,  787,717,719,715,674]
-    bot 2 took:  [804,730,768,847,832,  782,814,598,817,680,  607,705,713,836,693]
-    bot 3 took:  [743,802,673,763,851,  746,746,850,636,679,  890,849,702,896,877]
-    bot 4 took:  [859,658,782,675,673,  769,795,857,897,875,  670,651,894,891,893]
-*/
-
-
 
 // let cardsJSON = JSON.parse( fs.readFileSync('2ED.json', {encoding:'utf-8', flag:'r'}) );
 // let cardsInSet = cardsJSON["cards"];
@@ -201,84 +187,3 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
 //             rares.push(card);
 //     }
 // }
-
-/*  
-variables:
-    // let pack2 = createPack();   // their packs
-    // let pack3 = createPack();   
-    // let pack4 = createPack();
-
-    // let bot2Picks = [];
-    // let bot3Picks = [];
-    // let bot4Picks = [];
-    // let bot2Colors = '', bot3Colors = '', bot4Colors = '';
-
-
-previously in passBtn event listener:
-                // Have the AI remove a card from pack2...
-
-                let pickObj = pickCard( pack2, bot2Colors);  // choose a card
-                let thisCard = pickObj["cardNum"];          // store the card #
-                let thisColor = pickObj["cardColor"];       // store the color of that card
-
-                if( thisColor != 'X'  &&  thisColor != 'A'  &&  !bot2Colors.includes( thisColor,0 ) )
-                    bot2Colors += thisColor;  
-
-                bot2Picks.push( thisCard );                         // keep the card
-                pack2.splice( pack2.indexOf( thisCard, 0 ), 1);     // (remove it from the pack)
-
-                // repeat with pack 3 for bot3
-                pickObj = pickCard( pack3, bot3Colors);
-                thisCard = pickObj["cardNum"];
-                thisColor = pickObj["cardColor"];
-
-                if( thisColor != 'X'  &&  thisColor != 'A'  &&  !bot3Colors.includes( thisColor,0 ) )
-                    bot3Colors += thisColor;
-
-                bot3Picks.push( thisCard );
-                pack3.splice( pack3.indexOf( thisCard, 0 ), 1);
-
-                // and with pack 4 for bot4
-                pickObj = pickCard( pack4, bot4Colors);
-                thisCard = pickObj["cardNum"];
-                thisColor = pickObj["cardColor"];
-
-                if( thisColor != 'X'  &&  thisColor != 'A'  &&  !bot4Colors.includes( thisColor,0 ) )
-                    bot4Colors += thisColor;
-
-                bot4Picks.push( thisCard );
-                pack4.splice( pack4.indexOf( thisCard, 0 ), 1);
-                
-                // rotate packs with 1 less card, e.g. clockwise
-                const temp = pack;
-                pack = pack4;
-                pack4 = pack3;
-                pack3 = pack2;
-                pack2 = temp;
-
-                if(pack.length == 0) {
-                    ...
-                    //localStorage.setItem("test3-mine", cardsPickedThisPack);      //check "test2-draft" for pack 1
-                    
-
-                    // localStorage.setItem("test3-bot2", bot2Picks);
-                    // localStorage.setItem("test3-bot3", bot3Picks);
-                    // localStorage.setItem("test3-bot4", bot4Picks);
-                }
-                */
-
-
-// WORKED!  BUT ONLY NEEDED ONCE!  DON'T USE AGAIN!
-// var fs = require('fs');
-// const https = require("https");
-
-// for( let id of idNums ) {
-//     const file = fs.createWriteStream(`images/${id}.jpeg`);
-
-//     https.get(`https://gatherer.wizards.com/Handlers/Image.ashx?type=card&multiverseid=${id}`, response => {
-//         response.pipe( file );
-//     });
-// }
-
-
-
