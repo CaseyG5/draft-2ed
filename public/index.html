@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Welcome to Draft Unlimited</title>
+</head>
+<body id="main-body">
+    <div id="join">
+        <h1>Welcome to Draft Unlimited!</h1>
+
+        There are currently <span id="users-connected">0</span> players connected.<br>
+        Waiting for <span id="users-needed">8</span> more.<br>
+        <br>
+
+        <label for="name">Enter a player name:</label>
+        <input id="player-name" type="text" name="name" placeholder="tcgplaya"/>
+        <button id="join-btn">Join Game</button>
+        <br>
+
+        <h3>Players in next draft:</h3>
+        <ol id="player-list">
+        </ol>
+        <br>
+
+        <h4>Look up a card by name while you're waiting...</h4>  
+        <!-- # (598-899) -->
+        <div id="image-and-info">
+            <div style="width: 275px; ">
+                <div id="card-frame">
+                    <img src="images/692.jpeg" style="max-width: 100%;" alt="ancestral" />
+                </div>
+                <br>
+                <label for="which-card">Card name:</label>
+                <input id="card-num" type="text" name="which-card" placeholder="Mana Vault" />
+                <button id="search-btn">Search</button>
+            </div>
+            <div id="card-info">
+                <!--  Name, casting cost, type, text, and if applicable P/T  --> 
+            </div>
+        </div>
+    </div>   
+    
+    <div id="open" hidden>
+        <div id="sealed-section">
+            <span class="q-mark">?</span>
+            <div id="pack-frame">
+                <img src="images/mtg-pack.jpeg" alt="Sealed Unlimited Booster Pack">
+            </div>
+            <span class="q-mark">?</span>
+
+        </div>
+
+        <br>
+
+        <div class="btn-panel">
+            <button id="unwrap-btn" class="gold-btn">Open pack!</button>
+        </div>
+    </div>
+
+    <div id="draft" hidden>
+        <div id="top-section">
+
+            <div class="time-box">
+                <div id="time-title" class="text-white">Time left in draft:</div>
+                <div id="time-left" class="text-white">
+                    <span id="minutes">59</span> : <span id="seconds">59</span> 
+                </div>    
+            </div>
+            <div id="centerpiece">
+                <div id="cards-unseen">
+                    <img id="top-card" src=""/>
+                </div>
+                <br>
+                <button id="next-btn" class="gold-btn">Next Card</button>
+            </div>    
+            <div class="info-box">
+                When you've decided on<br>
+                a card to keep, click on it<br>
+                to lock in your choice.<br>
+                Then click "Pass" to pass<br>
+                the rest.
+            </div>
+        </div>
+
+        <br><br>
+
+        <div id="cards-seen">
+            <!--  CARDS FROM PACK SHOW UP HERE  -->
+        </div>
+
+        <br><br>
+        <div class="btn-panel">
+            <button id="pass-btn" class="gold-btn" hidden="true">Pass</button>
+        </div>
+        <br>
+    </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="jquery.js"></script>
+<script src="ajax.js"></script>
+<script src="drafting.js"></script>
+<script src="app.mjs"></script>
+
+    <script>
+        document.getElementById('unwrap-btn').addEventListener( 'click', event => {
+            $('#open').attr('hidden', true);    // hide open frame
+            $('#draft').attr('hidden', false);  // show draft frame
+        });
+    </script>
+
+</body>
+</html>
+
+
