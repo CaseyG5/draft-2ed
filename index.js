@@ -1,10 +1,10 @@
-import Tournament from './classes';
-const { createPack } = require('./createpack');
+import Tournament from './classes.js';
+import createPack from './createpack.js';
 
 //const { buildDeck } = require('./build');
 
 // Global constants
-const PORT = 29170;
+const PORT = 29170;   // or port # 13207 for MTG  :)
 
 // Global variables
 let cards;
@@ -36,6 +36,10 @@ try {
 
 
 app.use( express.static('./public') );
+
+// app.use(express.cookieParser());
+// app.use( express.cookieSession({ key: 'value', cookie: {maxAge: 13200000} }) );
+// cookie middleware
 
 // app.use( express.urlencoded({ extended: false }) );
 
