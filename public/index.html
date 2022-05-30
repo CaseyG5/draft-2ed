@@ -8,6 +8,7 @@
     <title>Welcome to Draft Unlimited</title>
 </head>
 <body id="main-body">
+                                    <!-- Draft Sign-up "Page" -->
     <div id="join">
         <h1>Welcome to Draft Unlimited!</h1>
 
@@ -17,32 +18,31 @@
 
         <label for="name">Enter a player name:</label>
         <input id="player-name" type="text" name="name" placeholder="tcgplaya"/>
-        <button id="join-btn">Join Game</button>
+        <button id="join-btn" class="action-btn">Join Game</button>
         <br>
 
         <h3>Players in next draft:</h3>
         <ol id="player-list">
         </ol>
         <br>
-
-        <h4>Look up a card by name while you're waiting...</h4>  
-        <!-- # (598-899) -->
+        
         <div id="image-and-info">
             <div style="width: 275px; ">
                 <div id="card-frame">
-                    <img src="images/692.jpeg" style="max-width: 100%;" alt="ancestral" />
+                    <img src="images/692.jpeg" style="max-width: 100%;" alt="Ancestral me?" />
                 </div>
-                <br>
-                <label for="which-card">Card name:</label>
+                
+                <h4>Look up a card by name while you're waiting...</h4> <!-- # (598-899) -->
+                <!-- <label for="which-card">Card name:</label> -->
                 <input id="card-num" type="text" name="which-card" placeholder="Mana Vault" />
-                <button id="search-btn">Search</button>
+                <button id="search-btn" class="action-btn">Search</button>
             </div>
             <div id="card-info">
                 <!--  Name, casting cost, type, text, and if applicable P/T  --> 
             </div>
         </div>
     </div>   
-    
+                                    <!-- Open pack! -->
     <div id="open" hidden>
         <div id="sealed-section">
             <span class="q-mark">?</span>
@@ -59,7 +59,7 @@
             <button id="unwrap-btn" class="gold-btn">Open pack!</button>
         </div>
     </div>
-
+                                    <!-- Draft "Page" -->
     <div id="draft" hidden>
         <div id="top-section">
 
@@ -71,10 +71,11 @@
             </div>
             <div id="centerpiece">
                 <div id="cards-unseen">
-                    <img id="top-card" src=""/>
+                    <img id="top-card" />
                 </div>
                 <br>
                 <button id="next-btn" class="gold-btn">Next Card</button>
+                <button id="pass-btn" class="gold-btn" hidden="true">Pass</button>
             </div>    
             <div class="info-box">
                 When you've decided on<br>
@@ -91,18 +92,77 @@
             <!--  CARDS FROM PACK SHOW UP HERE  -->
         </div>
 
-        <br><br>
         <div class="btn-panel">
-            <button id="pass-btn" class="gold-btn" hidden="true">Pass</button>
+            <!-- Pass button moved up ^ -->
+            WHY IS THIS WHITE??
         </div>
-        <br>
+        <!-- <br> -->
+
     </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="jquery.js"></script>
-<script src="ajax.js"></script>
-<script src="drafting.js"></script>
-<script src="app.mjs"></script>
+
+
+                                    <!-- Deck Assembly "Page" -->
+    <div id="build" hidden>
+        <div id="card-pool">
+            <!-- 
+            <div style="width: 159px; height: 221px"><img src="images/684.jpeg" width="159px" height="221px" alt=""></div>
+            <div style="width: 159px; height: 221px"><img src="images/684.jpeg" width="159px" height="221px" alt=""></div>
+            <div style="width: 159px; height: 221px"><img src="images/684.jpeg" width="159px" height="221px" alt=""></div>
+            -->
+        </div>
+        <br>
+        <div id="qtys-and-controls">
+            <span id="excluded-count" class="qty">0</span>
+            <br>
+            <button id="thin-deck" class="gold-btn">X selected</button>
+            <br>
+            <br>
+            <div id="choose-basics">        
+                <div class="basic-land">    <!-- @TODO: Cycle through lands 1-3 with click -->
+                    <img src="images/898.jpeg" style="max-height: 100%" alt="Basic Plains"/>
+                </div>
+                <div class="basic-land">
+                    <img src="images/895.jpeg" style="max-height: 100%" alt="Basic Island"/>
+                </div>
+                <div class="basic-land">
+                    <img src="images/876.jpeg" style="max-height: 100%" alt="Basic Swamp"/>
+                </div>
+                <div class="basic-land">
+                    <img src="images/892.jpeg" style="max-height: 100%" alt="Basic Mountain"/>
+                </div>
+                <div class="basic-land">
+                    <img src="images/889.jpeg" style="max-height: 100%" alt="Basic Forest"/>
+                </div>
+            </div>
+
+            <br>
+            <div id="land-quantities">
+                <span id="plains-qty" class="qty">0</span>
+                <span id="island-qty" class="qty">0</span>
+                <span id="swamp-qty" class="qty">0</span>
+                <span id="mountain-qty" class="qty">0</span>
+                <span id="forest-qty" class="qty">0</span>
+            </div>
+            <br>
+            <span>Click a land quantity # to increase it.</span>
+            <span>Option/Alt + Click to decrease it.</span>
+            <br>
+            <span>When land quantities are all set, click "Submit deck" to battle.</span>
+            <br>
+            <form id="submit-deck" action="submit">
+                <button class="gold-btn" type="submit">Submit deck</button>
+            </form>
+            <br>
+        </div>
+        <!-- <script src="build.js"></script> -->
+    </div>   
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="jquery.js"></script>
+    <!-- <script src="ajax.js"></script> -->
+    <script src="app.mjs"></script>
+    <script src="drafting.js"></script>
 
     <script>
         document.getElementById('unwrap-btn').addEventListener( 'click', event => {
