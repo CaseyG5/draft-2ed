@@ -55,6 +55,22 @@ window.addEventListener( 'keyup', ke => {
     }
 })
 
+// Adjust and Show the quantity of a land type, depending on whether Alt key is pressed
+function adjustQuantity(element) {
+    // get current quantity
+    let currentQty = Number( element.innerText );
+       
+    // if Alt key is down...
+    if(altPressed) {
+        if(currentQty > 0) currentQty--;    // if quantity > 0, decrement quantity
+    }
+    else {
+        currentQty++;       // otherwise, increment quantity
+    }
+    // render updated value
+    element.innerText = `${currentQty}`;
+}
+
 // capture 'click' event on Quantity of each land type
 plainsQty.addEventListener( 'click', e => {
     adjustQuantity(plainsQty);
@@ -72,26 +88,11 @@ forestQty.addEventListener( 'click', e => {
     adjustQuantity(forestQty);
 });
 
-// Adjust and Show the quantity of a land type, depending on whether Alt key is pressed
-function adjustQuantity(element) {
-    // get current quantity
-    let currentQty = Number( element.innerText );
-       
-    // if Alt key is down...
-    if(altPressed) {
-        if(currentQty > 0) currentQty--;    // if quantity > 0, decrement quantity
-    }
-    else {
-        currentQty++;       // otherwise, increment quantity
-    }
-    // render updated value
-    element.innerText = `${currentQty}`;
-}
-
 // Submit all basic land selections and display them
 submitBtn.addEventListener( 'submit', e => {
     e.preventDefault();
-
+    submitBtn.setAttribute('disabled', true);       // does this work?  if not hide it
+   
     // add lands to deck and proceed to first round
     const p = Number( plainsQty.innerText );
     const i = Number( islandQty.innerText );
@@ -119,20 +120,24 @@ function showCardOnGrid( c ) {
     let cardFrame = document.createElement('div');   // @TODO -- probably don't need this
     let card = document.createElement('img');        // @TODO -- just add .card class to img element
     
-    cardFrame.setAttribute('style', "width: 159px; height: 221px; background: black");            
-    card.setAttribute('style', "width: 159px; height: 221px; opacity: 1");   
+    cardFrame.setAttribute('style', "width: 159px; height: 221px; background: black");     
+    card.classList.add('seen');       
+    card.style.opacity = '1';   
     card.src = `images/${cards[c]}.jpeg`;
-    card.id = `${cards[c]}`;
+
+    if( ! $(`#${cards[c]}`) ) card.id = `${cards[c]}`;                    // fails the duplicate test
+    else if( ! $(`#${cards[c]}a`) ) card.id = `${cards[c]}a`;
+    else card.id = `${cards[c]}b`;
         //console.log(card.id + ", ");
     cardFrame.appendChild(card);
     myPicks.appendChild(cardFrame);
 
     if(clickable) {
         card.addEventListener( 'click', () => {
-            console.log(card.style.opacity);
+            // console.log(card.style.opacity);
             if(card.style.opacity == "1") {             // EXCLUDE a card
                 card.style.opacity = "0.3";
-                console.log(card.id + " excluded");
+                // console.log(card.id + " excluded");
                 rejects.push( Number(card.id) );
             }
             else if(card.style.opacity == "0.3") {      // UNDO   @TODO: TEST this
