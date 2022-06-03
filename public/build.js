@@ -1,6 +1,10 @@
 let myPicks = document.getElementById("card-pool");
-let excluded = document.getElementById("excluded-count");
+let excludedCount = document.getElementById("excluded-count");
 let excludeBtn = document.getElementById('thin-deck');
+
+const buildMin = $('#build-min');  // shows minutes remaining
+const buildSec = $('#build-sec');  // shows seconds
+const buildTimerDiv = $('#build-timer');    // holds them both
 
 let plainsQty = document.getElementById('plains-qty');
 let islandQty = document.getElementById('island-qty');
@@ -8,16 +12,22 @@ let swampQty = document.getElementById('swamp-qty');
 let mountainQty = document.getElementById('mountain-qty');
 let forestQty = document.getElementById('forest-qty');
 
-let submitBtn = document.getElementById('submit-deck');
+let submitBtn = document.getElementById('add-submit');   
 
 // @TODO: Display timer (time remaining) on build.html page
+// @TODO: Fix bug regarding cards removed persisting AND
+//        Count for cards removed not resetting after cuts made
 
 let cards = allCardsKept;       // ref to variable in app.mjs
 let rejects = [];
+let numCuts = 0;    
 let clickable = true;
+let ready = false;
 let altPressed = false;
 
+submitBtn.hidden = true;
 
+console.log("Cards should be the same as allCards. Is it? -->" + cards);
 // Begin by showing all 45 cards drafted
 for ( let c = 0; c < 45; c++ ) {
     showCardOnGrid( c );
@@ -27,21 +37,120 @@ for ( let c = 0; c < 45; c++ ) {
 // and re-render cards on 8x6 grid that were kept
 excludeBtn.addEventListener( 'click', e => {
     // eliminate selected cards from pool
-    rejects.forEach( cardNum => {
-        let index = cards.indexOf(cardNum, 0);   // find its location
-        cards.splice( index, 1);                 // then remove it
-    });
+    console.log("removing: " + rejects);
 
-    excludeBtn.hidden = true; // hide exclude button since it's no longer needed
-    excluded.hidden = true;   // hide # of cards cut for the same reason
+    let cardsToRemove = rejects.length;
+    for(let x = 0; x < cardsToRemove; x++) {
+        cards.splice(  cards.indexOf( rejects.pop(), 0 ), 1  );
+    }
 
-    clickable = false;        // cards (re)shown will no longer be clickable
+    console.log("cards are now: " + cards);
+
+    //clickable = false;        
 
     // redraw cards on grid (picks - cuts)
-    myPicks.innerHTML = "";
-    for( let c = 0; c < cards.length; c++ ) showCardOnGrid(c);
+    excludedCount.innerText = `${rejects.length}`;
+    myPicks.innerHTML = "";                             //  wipe slate clean
+ 
+    numCuts++;
+    if(numCuts == 1) {
+        submitBtn.hidden = false;       // Show button to "Add lands"
+    }
+    else if(numCuts == 2) {
+        clickable = false;              // cards re-shown will no longer be clickable
+        excludeBtn.hidden = true;       // hide exclude button since it's no longer needed
+        excludedCount.hidden = true;    // hide # of cards cut for the same reason     
+    }
+                                                                   // although...
+    for( let c = 0; c < cards.length; c++ ) showCardOnGrid(c);      // @TODO: better to avoid redrawing ALL cards??
+    
 });
 
+// Submit all basic land selections and display them
+submitBtn.addEventListener( 'click', (e) => {
+    // e.preventDefault();
+
+    if(ready) {
+        //submitBtn.setAttribute('disabled', true);       // does this work?  if not hide it
+
+        // display "LOADING MATCH..." for a few seconds
+        console.log("sending deck submission to server...")
+
+        // send deck submission event to server with decklist (array)
+        clientSocket.emit('deckAssembled', { draftNum: myDraftID, playerNum: myPlayerID, theDeck: cards } );
+    }
+    else {
+        clickable = false;
+
+        // add lands to deck and proceed to first round
+        const p = Number( plainsQty.innerText );
+        const i = Number( islandQty.innerText );
+        const s = Number( swampQty.innerText );
+        const m = Number( mountainQty.innerText );
+        const f = Number( forestQty.innerText );
+        const totalLands = p + i + s + m + f;
+
+        plainsQty.innerText = "0";  islandQty.innerText = "0";  swampQty.innerText = "0";
+        mountainQty.innerText = "0";  forestQty.innerText = "0";    // reset quantities after values retrieved
+
+// @TODO: allow for land art choices 1-3
+        for( let k = 0; k < p; k++ ) cards.push(899);       // plains
+        for( let k = 0; k < i; k++ ) cards.push(895);       // islands
+        for( let k = 0; k < s; k++ ) cards.push(876);       // swamps
+        for( let k = 0; k < m; k++ ) cards.push(892);       // mountains
+        for( let k = 0; k < f; k++ ) cards.push(888);       // forests
+
+        console.log("Adding " + totalLands + " lands");
+        // show lands added
+        for( let k = (cards.length - totalLands); k < cards.length; k++ ) showCardOnGrid(k);
+
+        submitBtn.innerText = "Submit deck";
+        ready = true;
+    }
+});
+
+// Displays 1 card on the 8x6 grid
+function showCardOnGrid( c ) {
+    let cardFrame = document.createElement('div');   // @TODO -- probably don't need this
+    let card = document.createElement('img');        // @TODO -- just add .card class to img element
+    
+    cardFrame.setAttribute('style', "width: 159px; height: 221px; background: black");     
+    card.classList.add('seen');       
+    card.style.opacity = '1';   
+    card.src = `images/${cards[c]}.jpeg`;
+
+    // should pass the duplicate test, JIC
+    if( ! document.getElementById(`${cards[c]}`) ) {                    // if that id is not taken, e.g. 598
+        console.log( "Ensuring card ID is NOT already in use." );       
+        card.id = `${cards[c]}`;                                        // then take it.
+    }                                                                                       // otherwise...
+    else if( ! document.getElementById(`${cards[c]}a`) ) card.id = `${cards[c]}a`;          // use 598a
+    else if( ! document.getElementById(`${cards[c]}b`) ) card.id = `${cards[c]}b`;          //  or 598b
+    else card.id = `${cards[c]}c`;                                                          //  or 598c
+                                                        // highly unlikely someone would draft 5 of anything!
+    cardFrame.appendChild(card);
+    myPicks.appendChild(cardFrame);
+
+    if(clickable) {
+        card.addEventListener( 'click', () => {
+            let cNum = `${card.id}`.slice(0,3);
+            
+            if(card.style.opacity == "1") {             // EXCLUDE a card
+                card.style.opacity = "0.3";
+                console.log(cNum + " excluded");
+                rejects.push( Number(cNum) );
+            }
+            else if(card.style.opacity == "0.3") {      // UNDO   @TODO: TEST this
+                card.style.opacity = "1";
+                // remove card from rejects...  or we could keep it "touch move"
+                rejects.splice( rejects.indexOf(cNum, 0), 1);   
+                console.log("changed mind. card " + cNum + " saved");
+                // CHECK:  if multiples, does indexOf return 1st?
+            }
+            excludedCount.innerText = `${rejects.length}`;
+        });
+    }
+}
 
 // capture Alt key up & down events  (Alt key is #18)
 window.addEventListener( 'keydown', keyEvent => {
@@ -87,72 +196,3 @@ mountainQty.addEventListener( 'click', e => {
 forestQty.addEventListener( 'click', e => {
     adjustQuantity(forestQty);
 });
-
-// Submit all basic land selections and display them
-submitBtn.addEventListener( 'submit', e => {
-    e.preventDefault();
-    submitBtn.setAttribute('disabled', true);       // does this work?  if not hide it
-   
-    // add lands to deck and proceed to first round
-    const p = Number( plainsQty.innerText );
-    const i = Number( islandQty.innerText );
-    const s = Number( swampQty.innerText );
-    const m = Number( mountainQty.innerText );
-    const f = Number( forestQty.innerText );
-    const totalLands = p + i + s + m + f;
-
-    // @TODO: allow for land card choices 1-3
-    for( let k = 0; k < p; k++ ) cards.push(898);
-    for( let k = 0; k < i; k++ ) cards.push(895);
-    for( let k = 0; k < s; k++ ) cards.push(876);
-    for( let k = 0; k < m; k++ ) cards.push(892);
-    for( let k = 0; k < f; k++ ) cards.push(889);
-
-    // show lands added
-    for( let k = (cards.length - totalLands); k < cards.length; k++ ) showCardOnGrid(k);
-
-    // send deck submission event to server with decklist (array)
-    clientSocket.emit('deckAssembled', { draftNum: myDraftID, playerNum: myPlayerID, theDeck: cards } );
-});
-
-// Displays 1 card on the 8x6 grid
-function showCardOnGrid( c ) {
-    let cardFrame = document.createElement('div');   // @TODO -- probably don't need this
-    let card = document.createElement('img');        // @TODO -- just add .card class to img element
-    
-    cardFrame.setAttribute('style', "width: 159px; height: 221px; background: black");     
-    card.classList.add('seen');       
-    card.style.opacity = '1';   
-    card.src = `images/${cards[c]}.jpeg`;
-
-    if( ! $(`#${cards[c]}`) ) card.id = `${cards[c]}`;                    // fails the duplicate test
-    else if( ! $(`#${cards[c]}a`) ) card.id = `${cards[c]}a`;
-    else card.id = `${cards[c]}b`;
-        //console.log(card.id + ", ");
-    cardFrame.appendChild(card);
-    myPicks.appendChild(cardFrame);
-
-    if(clickable) {
-        card.addEventListener( 'click', () => {
-            // console.log(card.style.opacity);
-            if(card.style.opacity == "1") {             // EXCLUDE a card
-                card.style.opacity = "0.3";
-                // console.log(card.id + " excluded");
-                rejects.push( Number(card.id) );
-            }
-            else if(card.style.opacity == "0.3") {      // UNDO   @TODO: TEST this
-                card.style.opacity = "1";
-                // remove card from rejects...  or we could keep it "touch move"
-                rejects.splice( rejects.indexOf(card.id, 0), 1);
-            }
-            excluded.innerText = `${rejects.length}`;
-        });
-    }
-}
-// For previous testing:
-// let deck =  [804,730,768,847,832,  782,814,598,817,680,  607,705,713,836,693,
-//              743,802,673,763,851,  746,746,850,636,679,  890,849,702,896,877,
-//              859,658,782,675,673,  769,795,857,897,875,  670,651,894,891,893]
-// OR
-// let deckString = [ ...localStorage.getItem("cards-drafted"), ...localStorage.getItem("pack2"), ...localStorage.getItem("pack3") ];
-// let deck = deckString.split(',').map( item => Number(item) );   // map/convert string to number
