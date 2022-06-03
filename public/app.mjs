@@ -1,24 +1,25 @@
 
 var clientSocket = io();
-let myDraftID = 0;
+let myName = "";
 let myPlayerID = 0;
-let myMatchID = 0;
-// myOpponentID = 0;
+let myDraftID = 0;
+let myMatchID = "";
+let myOpponentID = 0;
+let myOppName = "";
 let myTimer;
 let myPack = [];
 let allCardsKept = [];
-let myOpponentID = 0;
 
 import("./timer.mjs").then( result => {
     myTimer = new result.default(30,0);
 }).then(
     () => {
-    myTimer.setDisplayFunc( updateTime );
+    myTimer.setDisplayFunc( updateDraftTime );
 });
 
 // Dynamic HTML elements for sign-up page
-const userCount = document.getElementById('users-connected');   // <span>
-const usersNeeded = document.getElementById('users-needed');    // <span>
+const userCount = document.getElementById('connected');   // <span>
+const usersNeeded = document.getElementById('needed');    // <span>
 
 const nameField = document.getElementById('player-name');       // <input>
 const joinBtn = document.getElementById('join-btn');            // <button>
@@ -30,9 +31,10 @@ const cardFrame = document.getElementById('card-frame');        // <div> holding
 const cardInfo = document.getElementById('card-info');          // <div>
 
 // HTML elements for timer
-const timerDiv = $('#time-left');
-const minElem = $('#minutes');
-const secElem = $('#seconds');
+const draftTimerDiv = $('#time-left');
+const draftMin = $('#minutes');
+const draftSec = $('#seconds');
+
 
 joinBtn.addEventListener('click', () => {
     if(nameField.value) clientSocket.emit('playerJoinRequest', {name: nameField.value} );
@@ -49,6 +51,7 @@ searchBtn.addEventListener('click', () => {
 // Server has added the requesting player to the "sign-up sheet"
 clientSocket.on('playerJoinOK', (data) => {         // { draftNum, playerNum }
     joinBtn.hidden = true;
+    myName = nameField.value;
     let item = document.createElement('li');
     item.textContent = nameField.value;
     nameField.value = '';
@@ -114,15 +117,15 @@ clientSocket.on('firstPack', (data) => {
 
 // Signal to start our timer -- 30 min to draft 3 packs and build a deck
 clientSocket.on('startDraftTimer', () => {
-    myTimer.start();        // updates time on page thanks to updateTime() callback fn passed to Timer object
+    myTimer.start();        // updates time on page thanks to updateDraftTime() callback fn passed to Timer object
     clientSocket.emit('timerStarted');
 });
 
 // Will be needed later to resync timer
 clientSocket.on('timeRemaining', (data) => {
-    myTimer.stop();
-    myTimer.reset( data.min, data.sec );
-    myTimer.start();
+    //myTimer.stop();
+    myTimer.reset( data.min, data.sec );  // @TODO: test with just reset()
+    //myTimer.start();
 });
 
 // Signal to begin drafting a pack
@@ -145,67 +148,105 @@ clientSocket.on('nextPack', (data) => {    // { pack, packNum }
     draftOnePack(data.packNum, myDraftID, myPlayerID, addToCardsKept);
 });
 
-// ...
+// ... ALL PACKS have been DRAFTED and DECKS have been ASSEMBLED
+
+// Signal to prepare to play
+// clientSocket.on('prepareToPlay', () => {
+    
+// });
 
 // Signal to reset timer for Round 1/2/3
 clientSocket.on('resetTimer', () => {
+    // prepare game play screen
+    $.getScript('play.js');
+    $('#build').attr('hidden', true);
+    $('#play').attr('hidden', false);
     myTimer.stop();
     myTimer.reset(50,0);
+    
 });
 
 // Server has the pairing info ready
 clientSocket.on('pairingInfoReady', () => {
-    clientSocket.emit('pairingRequest', { draftNum: myDraftID, playerNum: myPlayerID } );   // <-- fill in with data obj
+    clientSocket.emit('pairingRequest', { draftNum: myDraftID, playerNum: myPlayerID } );
 });
 
 // Server has sent us our pairing info
 clientSocket.on('pairingInfo', (data) => {      // { match, opponentNum }
     // Okay, match is...
     myMatchID = data.match;                     // e.g. 5v7
-    // so I'm playing against who?
+    // so I'm playing against...
     myOpponentID = data.opponentNum;
+    // whose name is... data.opponentName
+    myOppName = data.opponentName;
 
-    clientSocket.emit('readyToPlay', { draftNum: myDraftID, playerNum: myPlayerID });     // <-- fill in with data obj
-    clientSocket.to(`draft${myDraftID}-match${myMatchID}`).emit('readyFreddie', { message: "you ready?"});
+    clientSocket.emit('readyToPlay', { draftNum: myDraftID, playerNum: myPlayerID });
+    //clientSocket.to(`draft${myDraftID}-match${myMatchID}`).emit('readyFreddie', { message: "you ready?"});
 })
 
 // Signal to begin the match
 clientSocket.on('beginMatch', () => {
-    // prepare game play screen
-    $.getScript('play.js');
-    $('#build').attr('hidden', true);
-    $('#play').attr('hidden', false);
+    console.log("whoo hoo, beginning a match!");
+    myTimer.setDisplayFunc( updateMatchTime );      // switch to play clock
+    myTimer.start();                                // and start clock
 
     // communication occurs via match "room" ID, e.g. draft0-match5v7
     // or clientSocket.broadcast?  check documentation
-    clientSocket.to(`draft${myDraftID}-match${matchID}`).emit('chatMsg', { message: "info" } );
-    ///////// GAME EVENTS:
-    // chat message send/receive
-    // shuffle deck
-    // roll dice
-    // player begins turn, untaps all
-    // player upkeep
-    // player draws card (I/send and opp/receive)
-    // player main phase: plays land 
-    // player taps land/artifact/creature for mana  -  mana counts update
-    // player casts creature, artifact, sorcery or ench.
-    // spell is put in graveyard or creature dies and goes to GY
-    // player attacks/blocks with creature(s)
-    // deal/receive damage
-    // proceed to next phase
-    // look through library
-    // take card from lib/GY
-    // player clean-up phase, end-of-turn, discard, pass
-    // resign
+    //clientSocket.emit... (`draft${myDraftID}-match${matchID}`).emit('chatMsg', { message: "info" } );
 
-    // advanced/extra:
-    // players spell goes on stack
-    // players spell resolves
+            // GAME EVENTS NEEDED:
+    // untap if tapped by mistake
+    // phase begins                                         //   @TODO: send event entering/leaving main
+    // clean-up phase, end-of-turn, discard, pass           //   @TODO update phase and progress bar
+    // player taps non-basic land/artifact/creature for mana //   @TODO: send event with mana update info
+    // player moves spell/perm from one zone to another     //   @TODO: send event with "area" and card #
+    // deal/receive damage                                  //   @TODO: update my life total and send update event
+    // player attacks/blocks with creature(s)               //   @TODO: yikes    
+    // creature dies and goes to GY                         //   @TODO: hmmmm...
+    // after game, refresh play screen                      //   @TODO: also, where to display score?
 
-    // and start clock
-    //myTimer.setDisplayFunc( newUpdateTimeFunc );  @TODO!
-    myTimer.start(); 
+            // ADVANCED / OPTIONAL:
+    // losing player automatically has control of turn first
+    // player's spell goes on stack
+    // player's spell resolves
+
+            // COMPLETED:   
+    // chat message send/receive                            // VERIFIED working
+    // resign                                               // Button ADDED.  Event handled!
+    // shuffle deck                                         // Button ADDED.  Sends notifcation as chat message
+    // roll dice                                            // Button ADDED.  Sends notifcation as chat message
+    // player begins turn, untaps all                       // Button ADDED.  Sends notification as chat message
+    // player draws card (I/send and opp/receive)           // Button ADDED.  Sends notif. as chat msg
+    // look through library and choose card                 // Upgraded method to modal. Sends notif. as chat msg when looking, and when done ("player stops looking")
+    // proceed to next phase                                // Progress bar and phase both update
+    // players can click to adjust life totals              // (including Alt + click)
+    
 });
+
+clientSocket.on("updatePhase", (data) => {
+    // take current phase from opponent via server and update progress bar and info in sidebar
+});
+
+clientSocket.on("cardToZone", (data) => {
+    //   @TODO: send & receive event with "area" and card #
+    // take "area" and card # and move card to its new zone
+    // e.g. plays a land
+    // casts creatr, artif, sorc, inst or ench.
+    // or spell or perm. is put in graveyard
+});
+
+clientSocket.on('youResigned', (data) => {
+    alert("You have resigned");
+});
+
+
+// ... game1 result --> game 2 --> game 2 result --> game 3 or match done
+// ... un-join players from match room
+// ... if time left in round, allow players finished to go from waiting room
+// ... to spectate (temporarily join match room) with option to leave before time in round
+// ... when last match ends, proceed to next round
+// ... calc and issue pairings, start clock and repeat
+// ... 
 
 
 // Functions
@@ -225,17 +266,30 @@ function nltZero( num ) {
     return num;
 }
 
-function updateTime( min, sec ) {
+function updateDraftTime( min, sec ) {
     // update timer
-    minElem.text(`${min}`);
+    draftMin.text(`${min}`);
     if(sec < 10) {
         if(min == 0) {
-            timerDiv.removeClass('text-white');
-            timerDiv.addClass('text-red');
+            // draftTimerDiv.removeClass('text-white');
+            draftTimerDiv.addClass('text-red');
         }
-        secElem.text(`0${sec}`);
+        draftSec.text(`0${sec}`);
     }
-    else secElem.text(`${sec}`);
+    else draftSec.text(`${sec}`);
+}
+                                        // @TODO: ^ consolidate to stay dry v
+function updateMatchTime( min, sec ) {
+        // update timer
+        matchMin.text(`${min}`);
+        if(sec < 10) {
+            if(min == 0) {
+                // matchTimerDiv.removeClass('text-white');         // !!!!!!!!!!!!!!!!!!
+                matchTimerDiv.addClass('text-red');       // @TODO: remember to remove later when restarting timer!
+            }
+            matchSec.text(`0${sec}`);
+        }
+        else matchSec.text(`${sec}`);
 }
 
 function addToCardsKept( newCards ) {
