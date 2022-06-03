@@ -5,34 +5,35 @@ body {
 
 /* Index.html  aka Join Screen  */
 #join {
-    margin-left: 10px;
+    margin-left: 25px;
     background: white;    /* already white, just for clarity */
 }
+    #connected {
+        color: green;
+    }
+    #needed {
+        color: darkred;
+    }
 
-#users-connected {
-    font-size: 20px;
-    font-weight: bold;
-    color: green;
-}
-#users-needed {
-    font-size: 20px;
-    font-weight: bold;
-    color: darkred;
-}
-#image-and-info {
-    display: flex;
-}
-#card-info {
-    width: 260px; 
-    height: 286px; 
-    padding: 12px 15px;
-}
-#card-frame {
-    width: 223px;
-    height: 310px;
-    border-radius: 8px;
-    background: black;
-}
+    .num-users {
+        font-size: 22px;
+        font-weight: bold; 
+    }
+
+    #image-and-info {
+        display: flex;
+    }
+    #card-info {
+        width: 260px; 
+        height: 286px; 
+        padding: 12px 15px;
+    }
+    #card-frame {
+        width: 223px;
+        height: 310px;
+        border-radius: 8px;
+        background: black;
+    }
 
 /* Open / Draft screens */
 #open, #draft {
@@ -72,10 +73,9 @@ body {
     align-items: center;
     color: lightgray;
 }
-
     .time-box {
-        width: 270px;
-        font-size: 36px;
+        width: 250px;
+        font-size: 34px;
         text-align: center;
     }
 
@@ -85,194 +85,265 @@ body {
         flex-direction: column;
         align-items: center;
     }
-
-        #cards-unseen {
+        #pack-of-cards {
             width: 223px; 
             height: 310px; 
             margin-top: 70px;
             background-color: black; 
         }
+            #top-card {
+                max-width: 223px;  /* or object-fit: contain */
+                border-radius: 10px;
+            }
 
         .btn-panel {
+            height: 40px;
             display: flex;
             justify-content: center;
         }
 
-        .gold-btn {
-            background: gold;
+        .std-btn {
             width: 135px;
             height: 40px;
-            border: 3px solid darkgoldenrod;
             border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
+        }
+        .std-btn:focus {
+            outline: none;
+        }
+
+        .gold-btn {
+            background-color: gold;
+            border-width: 3px;
+            border-style: solid;
+            border-top-color: rgb(255, 235, 122);
+            border-right-color: darkgoldenrod;
+            border-bottom-color: darkgoldenrod;
+            border-left-color: rgb(255, 235, 122);
             color: black;
         }
         .gold-btn:active {
             /* background: rgb(102, 62, 9); */
-            background-color: goldenrod;
-            border-color: gold;
-            
+            background-color: gold;
+            border-top-color: darkgoldenrod;
+            border-right-color: rgb(255, 235, 122);
+            border-bottom-color: rgb(255, 235, 122);
+            border-left-color: darkgoldenrod;
         }
 
     .info-box {
-        width: 270px;
+        width: 250px;
         font-size: 24px;
     }
-
+        .btw {
+            font-size: 20px;
+        }
 
 #cards-seen {
-    width: 100%;
-    height: 221px;
-    /* background: gray; */
-    display: flex;
-    justify-content: flex-start;
-    
+    width: 1272px;    /* or 1272px as below */
+    height: 442px;
+    background-color: black;
+    display: grid;                      
+    /* justify-content: flex-start;        
+    flex-wrap: wrap; */
+    grid-template-columns: 159px 159px 159px 159px 159px 159px 159px 159px;
+    /* gap: -13px; */
+    grid-auto-rows: minmax( 221px, auto );
 }
-
     .backing {
         width: 159px;
         height: 221px;
-        margin-left: -75px;
+        border-radius: 7px;
+        margin-left: -13px;
+        position: relative;         /* might not need if Z index is not relevant either */
         background: black;
     }
 
     .seen {
-        width: 159px;
+        width: 159px;  
+        max-width: 159px;  /* or object-fit: contain */
         height: 221px;
+        border-radius: 7px;
     }
 
     #cards-seen :first-child {
         margin-left: 0px;
     }
-
-.text-white {
-    color: white;
-}
-.text-red {
-    color: red;
-}
-
+    #cards-seen :nth-child(9) {
+        margin-left: 0px;
+    }
 
 /* DECK ASSEMBLY */
 #build {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    width: 1272px;
+    background-color: black;
+    color: white;
 }
+    #build-timer {
+        height: 30px;
+        /* border: 1px solid white; */
+        padding: 10px 0;
+        font-size: 24px;
+        text-align: center;
+    }
 
     #card-pool {
         width: 1272px;
-        height: 1326px;
+        /* height: 1326px; */   /* NEED: auto-resizable grid */ 
         
         display: grid;
         grid-template-columns: 159px 159px 159px 159px 159px 159px 159px 159px;
-        grid-template-rows: 221px 221px 221px 221px 221px;
+        /* grid-template-rows: 221px 221px 221px 221px 221px; */
     }
 
-    .qty {
-        font-family:'Courier New', Courier, monospace;
-        font-size: 36px;
-        font-weight: 600;
-        color: black;
-    }
-
-    .build-btn {
-        width: 135px;
-        height: 40px;
-        background: #2b6382;
-        border: 3px solid #354e53;
-        border-radius: 8px;
-        color: white;
-        font-family: Arial, Helvetica, sans-serif;  /* as opposed to default ? */
-        font-size: 16px;
-        font-weight: 400; /* should be 600 ? */
-    }
-    .build-btn:active {
-        background: #57a7d1;
-        border-color: #336e8e;
-        color: black;
-    }
-
-    #choose-basics {
-        width: 1000px;
-        height: 221px;
+    #qtys-and-controls {
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
+        align-items: center;
     }
-        .basic-land {
-            width: 159px;
-            height: 221px;
+        .qty {
+            font-family:'Courier New', Courier, monospace;
+            font-size: 36px;
+            font-weight: 600;
+            /* color: white; */
+        }
+        
+        .remove-btn {
+            background: rgb(211,58,58);
+            border-top: 3px solid tomato;
+            border-right: 3px solid firebrick;
+            border-bottom: 3px solid firebrick;
+            border-left: 3px solid tomato;
+            color: white;
+        }
+        .remove-btn:active {
+            border-top-color: firebrick;
+            border-right-color: tomato;
+            border-bottom-color: tomato;
+            border-left-color: firebrick;
+        }
+        .build-btn {
+            background: green;
+            border-top: 3px solid rgb(18, 177, 18);
+            border-right: 3px solid rgb(20, 89, 20);
+            border-bottom: 3px solid rgb(20, 89, 20);
+            border-left: 3px solid rgb(18, 177, 18);
+            color: white;
+            /* #12772a for BS "success" */
+            /*font-family: Arial, Helvetica, sans-serif;   as opposed to default ? */
+        }
+        .build-btn:active {
+            background: green;
+            border-top: 3px solid rgb(20, 89, 20);
+            border-right: 3px solid rgb(18, 177, 18);
+            border-bottom: 3px solid rgb(18, 177, 18);
+            border-left: 3px solid rgb(20, 89, 20);
         }
 
-    #land-quantities {
-        width: 864px;
-        display: flex;
-        justify-content: space-between;
-    }
+        #choose-basics {
+            width: 1000px;
+            height: 221px;
+            display: flex;
+            justify-content: space-between;
+        }
+            .basic-land {
+                width: 159px;
+                height: 221px;
+            }
 
+        #land-quantities {
+            width: 864px;
+            display: flex;
+            justify-content: space-between;
+        }
 
 /* PLAY */
-#play {
+#play-inner {
     margin: 0;
     height: 100vh;
     display: flex;
 }
-#play > * {
+#play-inner > * {
     background: #1E1E1E;
     color: lightgray;
 }
 
 #main-section {
     width: calc(100vw - 220px); 
+    border-right: 3px solid #777;
     display: flex; 
     flex-direction: column;
 }
-
     #opp-playarea {
         min-width: 700px; 
         min-height: 240px; 
         display: flex;
     }
+        #opp-gy-exile {
+            border-bottom: 2px solid #555;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+            #opp-graveyard, #opp-exiles {
+                width: 150px; 
+                height: 207px;
+                padding: 5px;
+                background: #333;
+                /* toggle flex */
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+                overflow-x: hidden;   
+            }
+            #toggle-opp-gy-exile {
+                width: 100px;
+            }
 
         #opp-permanents {
             width: calc(100vw - 370px); 
             border-left: 2px solid #555;
             display: flex; 
             flex-direction: column; 
+            justify-content: flex-end;
             text-align: center;
         }
-
             #opp-lands {
                 height: 110px;
             }
             
             #opp-non-lands {
                 height: 135px;
+                border-top: 1px dashed #333;
+            }
+
+            #turn-progress {
+                width: 100%;
+                height: 7px;
+                margin-bottom: -2px;
             }
 
     #my-playarea {
         width: calc(100vw - 220px);
         height: 270px;
         box-sizing: border-box;
-        border-top: 2px solid #555;
+        /* border-top: 1px solid #555; */
         border-bottom: 2px solid #555;
         display: flex; 
         justify-content: space-between; 
         /* margin-top: 50px; */
         text-align: center;
     }
-
         #my-cards-in-play {
             min-width: 812px;
             width: calc(100vw - 290px);
             display: flex; 
             flex-direction: column
         }
-
             #non-lands-in-play {
                 height: 145px;
+                border-bottom: 1px dashed #333;
                 padding: 5px;
                 display: flex;
                 justify-content: flex-start;
@@ -305,7 +376,6 @@ body {
                 flex-direction: column;
                 justify-content: space-between;
             }
-
                 .mana-box {
                     
                     border: none;
@@ -314,6 +384,18 @@ body {
                     justify-content: space-between;
                     align-items: center;
                 }
+                    .mana-qty {
+                        font-family: 'Courier New', Courier, monospace;
+                        font-size: 20px;
+                        font-weight: 600;
+                    }
+                    .symbol {
+                        border-radius: 50%;
+                        
+                    }
+                    .halo {
+                        box-shadow: 0 0 15px rgb(255, 240, 154);
+                    }
 
     #hand {
         min-width: 917px;
@@ -330,55 +412,99 @@ body {
         border-radius: 6px;
     }
           
-        /* .card-in-hand {
+        /* (see above)
+            .card-in-hand {
             width: 126px;
             height: 175px;
             margin-right: 3px;
             border-radius: 6px;
         } */
 
+        .scale-on-battlefield:hover {
+            transform: scale(1.8, 1.8) translate(20px, 0);
+        }
+        .scale-on-manafield:hover {
+            transform: scale(1.4, 1.4) translate(10px, 0);
+        }
+        .scale-in-hand:hover {
+            transform: scale(1.4, 1.4) translate(18px, -25px);
+        }
+
 #right-sidebar {
     width: 220px; 
-    border-left: 2px solid #555;
+    border-left: 3px solid #404040;
     padding: 5px;
     display: flex; 
     flex-direction: column; 
     justify-content: space-between;
     align-items: center;
 }
+    #game-info {
+        width: 195px;
+        display: flex;
+        justify-content: space-evenly;
+        align-items: center;
+    }
+        .life-points {
+            font-size: 24px;
+            cursor: pointer;
+        }
+        #turn-info {
+            text-align: center;
+            font-weight: 700;
+        }    
 
     #chat-box {
         width: 185px;
         height: 210px;
+        margin-bottom: 5px;
         padding: 5px;
     }
+        #chat-log {
+            width: 185px;
+            height: 185px;
+            /* resize: none; */
+            margin-bottom: 3px;
+            border: 2px solid #555;
+            padding: 5px;
+            overflow-wrap: break-word;
+            overflow-x: hidden;
+            overflow-y: auto;
+            
+            /* font-family:'Times New Roman', Times, serif; */
+            font-size: 15px;
+            color: lightblue;
+        }
+            .my-chat-name {
+                color: rgb(241, 241, 148);
+            }
+            .opp-chat-name {
+                color: rgb(255, 133, 194);
+                /* text-decoration: wavy;    what does this do? */
+            }
+            #chat-input {
+                width: 185px;
+            }
 
-    #chat-log {
-        width: 175px;
-        resize: none;
-        font-family:'Times New Roman', Times, serif;
-        font-size: 14px;
-    }
-
-    .chat-name {
-        color: hotpink;
-    }
+        .instruction {
+            color: lightgrey;
+        }
 
     #my-graveyard, #my-exiles {
-        width: 169px;
+        width: 159px;
         height: 221px;
-        padding: 5px 10px;
-        background: #555;
-        
+        border: 2px solid #777;
+        border-right-color: #404040;
+        border-bottom-color: #404040;
+        padding: 5px 5px;
+        background: #292929;
+        /* toggle flex */
         flex-direction: column;
         justify-content: flex-start;
         align-items: center;
         overflow-x: hidden;
-        overflow-y: scroll;
-        scrollbar-width: none;  /* 'none' may not work because this property is only supported in Firefox */
+        /*scrollbar-width: none;   'none' may not work because this property is only supported in Firefox */
     }
-
-    
 
     #my-graveyard > img,
     #my-exiles > img {
@@ -391,22 +517,139 @@ body {
     #my-exiles :first-child {
         margin-top: 0px;
     }
-    
 
 .tapped {
     transform: rotate(90deg);
 }
 
-button {
-    border: 3px solid lightseagreen;
+.action-btn {
+    border: 3px solid rgb(32, 178, 122);
+    background-color: rgb(25, 118, 79);
     border-radius: 5px;
+    font-size: 12px;
+    color: white;
+}
+.action-btn:active {
+    
+    background-color: whitesmoke;
+    color: black
 }
 
+/* Modal dialogs (for Play screen) */
 
+.play-modal {
+    border-radius: 13px;
+    background-color: #1e1e1e;
+    text-align: center;
+    box-shadow: 0 0 10px whitesmoke;
+}
+    .modal-btn-panel {
+        width: 100%;
+        height: 40px;
+        margin-top: 10px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+
+/* Scry 1 */
+#scry-modal {
+    width: 223px;
+    margin-top: 90px;
+}
+
+/* View top 3 cards */
+#view3-modal {
+    width: 669px;
+    /* height: 355px; */
+    margin-top: 90px;
+}
+    #three-cards {
+        display: flex;
+        justify-content: flex-start;
+    }
+    /* #three-cards > img {
+        
+    } */
+    #card-positions {
+        margin-top: 10px;
+        display: flex;
+        color: whitesmoke;
+    }
+        .position {
+            width: 223px;
+            text-align: center;
+        }
+
+/* Search Library */
+#search-modal {
+    width: 795px;
+}
+    #my-library {
+        width: 795px;
+        min-height: 221px;
+        max-height: 553px;
+        border-radius: 7px;
+        background-color: #1E1E1E;
+    }
+        #my-library div {
+            margin-top: -166px;
+        }
+        #my-library div:first-child {
+            margin-top: 0;
+        }
+        .lib-row {
+            width: 795px;
+            height: 221px;
+            border-radius: 7px;
+            display: flex;
+        }
+
+/* See opponent's hand when revealed */
+#reveal-modal {
+    width: 795px;
+    /* height: 527px; */
+    margin: auto;
+}   
+    .modal-header {
+        color: whitesmoke;
+    }
+
+    #opp-hand {
+        width: 795px;
+        min-height: 221px;
+        max-height: 442px;
+        /* margin: 10px 0; */
+        border-radius: 7px;
+        /* background-color: black; */   /* Why the hell is darkgray LIGHTER than gray?  */
+        display: flex;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+.rounded {
+    border-radius: 10px;
+}
+.rounded-sm {
+    border-radius: 7px;
+}
+
+.text-white {
+    color: white;
+}
+.text-red {
+    color: red;
+}
+
+.disable-scrollbars::-webkit-scrollbar {
+    width: 0px;
+    background: transparent; /* make scrollbar transparent */
+}
 
 .test {
     background: hotpink;
-    color: burlywood;
+    color: yellowgreen;
+
     transform: translate(50px, 50px) rotate(90deg);
 }
 
@@ -415,8 +658,8 @@ button {
 
 
 
-/*  
-      
+/*  NOTES:
+
     width: 160px;   is a good start for cards in hand
 
     Try adding max-width: 100% to an <img> element
