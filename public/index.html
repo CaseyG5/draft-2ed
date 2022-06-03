@@ -5,15 +5,16 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
+    <!-- <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css"> -->
     <title>Welcome to Draft Unlimited</title>
 </head>
 <body id="main-body">
                                     <!-- Draft Sign-up "Page" -->
-    <div id="join">
+    <div id="join" >
         <h1>Welcome to Draft Unlimited!</h1>
 
-        There are currently <span id="users-connected">0</span> players connected.<br>
-        Waiting for <span id="users-needed">8</span> more.<br>
+        There are currently <span id="connected" class="num-users">0</span> players connected.<br>
+        Waiting for <span id="needed" class="num-users">8</span> more.<br>
         <br>
 
         <label for="name">Enter a player name:</label>
@@ -29,19 +30,30 @@
         <div id="image-and-info">
             <div style="width: 275px; ">
                 <div id="card-frame">
-                    <img src="images/692.jpeg" style="max-width: 100%;" alt="Ancestral me?" />
+                    <img id="example-card" src="" style="max-width: 100%;" alt="Ancestral me?" />
                 </div>
-                
-                <h4>Look up a card by name while you're waiting...</h4> <!-- # (598-899) -->
-                <!-- <label for="which-card">Card name:</label> -->
-                <input id="card-num" type="text" name="which-card" placeholder="Mana Vault" />
-                <button id="search-btn" class="action-btn">Search</button>
             </div>
             <div id="card-info">
                 <!--  Name, casting cost, type, text, and if applicable P/T  --> 
             </div>
         </div>
+
+        <h4>Look up a card by name while you're waiting...</h4> <!-- # (598-899) -->
+        <!-- <label for="which-card">Card name:</label> -->
+        <input id="card-num" type="text" name="which-card" placeholder="Mana Vault" />
+        <button id="search-btn" class="action-btn">Search</button>
+        <button id="surprise-btn" class="action-btn">Surprise me!</button>
     </div>   
+    <script>
+        exampleCard = document.getElementById('example-card');
+        let rand = Math.floor(Math.random() * 302) + 598;   // random # betw 0 and 301, then add 598
+        exampleCard.src = `images/${rand}.jpeg`;            // to get a # between 598 and 899 (incl)
+
+        document.getElementById('surprise-btn').addEventListener('click', () => {
+            rand = Math.floor(Math.random() * 302) + 598;
+            exampleCard.src = `images/${rand}.jpeg`;
+        });
+    </script>
                                     <!-- Open pack! -->
     <div id="open" hidden>
         <div id="sealed-section">
@@ -56,7 +68,7 @@
         <br>
 
         <div class="btn-panel">
-            <button id="unwrap-btn" class="gold-btn">Open pack!</button>
+            <button id="unwrap-btn" class="std-btn gold-btn">Open pack!</button>
         </div>
     </div>
                                     <!-- Draft "Page" -->
@@ -70,19 +82,22 @@
                 </div>    
             </div>
             <div id="centerpiece">
-                <div id="cards-unseen">
+                <div id="pack-of-cards">
                     <img id="top-card" />
                 </div>
                 <br>
-                <button id="next-btn" class="gold-btn">Next Card</button>
-                <button id="pass-btn" class="gold-btn" hidden="true">Pass</button>
+                <div class="btn-panel">
+                    <button id="next-btn" class="std-btn gold-btn">Next Card</button>
+                    <button id="pass-btn" class="std-btn gold-btn" hidden="true">Pass</button> <!--  -->
+                </div>
             </div>    
             <div class="info-box">
                 When you've decided on<br>
                 a card to keep, click on it<br>
-                to lock in your choice.<br>
+                to <em>lock</em> in your choice.<br>
+                &nbsp;(no backsies)<br>
                 Then click "Pass" to pass<br>
-                the rest.
+                the rest.<br>
             </div>
         </div>
 
@@ -91,19 +106,15 @@
         <div id="cards-seen">
             <!--  CARDS FROM PACK SHOW UP HERE  -->
         </div>
-
-        <div class="btn-panel">
-            <!-- Pass button moved up ^ -->
-            WHY IS THIS WHITE??
-        </div>
-        <!-- <br> -->
-
     </div>
 
 
 
                                     <!-- Deck Assembly "Page" -->
     <div id="build" hidden>
+        <div id="build-timer">
+            <span id="build-min">5</span> : <span id="build-sec">59</span>
+        </div>
         <div id="card-pool">
             <!-- 
             <div style="width: 159px; height: 221px"><img src="images/684.jpeg" width="159px" height="221px" alt=""></div>
@@ -115,7 +126,7 @@
         <div id="qtys-and-controls">
             <span id="excluded-count" class="qty">0</span>
             <br>
-            <button id="thin-deck" class="gold-btn">X selected</button>
+            <button id="thin-deck" class="std-btn remove-btn">X selected</button>
             <br>
             <br>
             <div id="choose-basics">        
@@ -148,19 +159,207 @@
             <span>Click a land quantity # to increase it.</span>
             <span>Option/Alt + Click to decrease it.</span>
             <br>
-            <span>When land quantities are all set, click "Submit deck" to battle.</span>
+            <span>When land quantities are all set, click "Add lands" and then "Submit deck" to battle.</span>
             <br>
-            <form id="submit-deck" action="submit">
-                <button class="gold-btn" type="submit">Submit deck</button>
-            </form>
+            <div>                                    <!--action="submit"-->
+                <button id="add-submit" class="std-btn build-btn" >Add lands</button>   <!--type="submit"-->
+            </div>
             <br>
         </div>
         <!-- <script src="build.js"></script> -->
-    </div>   
+    </div> 
+    
+    <div id="play" hidden>
+        <div id="play-inner">
+
+            <div id="main-section" >
+                <div id="opp-playarea" >
+                    <div id="opp-gy-exile">
+                        <div id="opp-graveyard" class="disable-scrollbars" style="display: flex">
+                            Opponent's Graveyard
+                            
+                        </div>
+                        <div id="opp-exiles" class="disable-scrollbars" style="display: none" >
+                            Opponent's Exile zone
+                        </div>
+                
+                        <button id="toggle-opp-gy-exile">Show Exiled</button>
+                    </div>
+        
+                    <div id="opp-permanents" >
+                        <div id="opp-lands">
+                            Opp's lands
+                        </div>
+                        <div id="opp-non-lands">
+                            Opp's non-land perm.
+                        </div>
+                        <progress id="turn-progress" max="100" value="0"> 0 % </progress>
+                    </div>
+                </div>
+        
+                <div id="my-playarea" >
+                    <div id="my-cards-in-play" >
+                        <div id="non-lands-in-play">
+                            
+                            <!-- <img src="test.jpg" width="90px" height="125px" alt="example size"/> -->
+                        </div>
+        
+                        <div id="lands-in-play">
+                            
+                            <!-- <img src="test.jpg" width="72px" height="100px" alt="example size"/> -->
+                        </div>
+                    </div>
+                    
+                    <div id="my-mana" >
+                        <div class="mana-box">
+                            <span id="colorless-qty" class="mana-qty">0</span>
+                            <img id="c-symbol" class="symbol" src="mana/C.png" width="35px" height="35px" alt="diamond"/>
+                        </div>
+                        <div class="mana-box">
+                            <span id="white-qty" class="mana-qty">0</span>
+                            <img id="w-symbol" class="symbol" src="mana/W.webp" width="35px" height="35px" alt="sun"/>
+                        </div>
+                        <div class="mana-box">
+                            <span id="blue-qty" class="mana-qty">0</span>
+                            <img id="u-symbol" class="symbol" src="mana/U.webp" width="35px" height="35px" alt="droplet"/>
+                        </div>
+                        <div class="mana-box">
+                            <span id="black-qty" class="mana-qty">0</span>
+                            <img id="b-symbol" class="symbol" src="mana/B.webp" width="35px" height="35px" alt="skull"/>
+                        </div>
+                        <div class="mana-box">
+                            <span id="red-qty" class="mana-qty">0</span>
+                            <img id="r-symbol" class="symbol" src="mana/R.png" width="35px" height="35px" alt="flame"/>
+                        </div>
+                        <div class="mana-box">
+                            <span id="green-qty" class="mana-qty">0</span>
+                            <img id="g-symbol" class="symbol" src="mana/G.webp" width="35px" height="35px" alt="tree"/>
+                        </div>
+                    </div>
+                </div>
+        
+                <div id="hand">
+                    <!-- 
+                    Cards in hand show up here 
+                    
+                    <img src="images/600.jpeg" width="126px" height="175px" alt="example card" style="border: 0px; border-radius: 6px"/>  
+        
+                    <div class="card-in-hand" draggable="true" style="width: 126px; height: 175px">1</div>
+                    <div class="card-in-hand" draggable="true" style="width: 126px; height: 175px">2</div>
+                    <div class="card-in-hand" draggable="true" style="width: 126px; height: 175px">3</div>
+                    ETC
+                    -->
+                </div>
+        
+                <!-- <br> -->
+            </div>
+        
+            <div id="right-sidebar" >
+                <div>Time left this round: &nbsp; &nbsp;<div id="round-timer" style="display: inline"> <span id="round-min">49</span>:<span id="round-sec">59</span></div><br>
+                </div>
+                <div id="game-info">
+        
+                    <div id="my-lifepoints" class="life-points">20</div>
+                    <div id="turn-info">
+                        <div><span id="player-name">[player name]</span>'s</div>
+                        <div>Turn # <span id="turn-number">1</span> </div>
+                        <div id="turn-phase">...</div>
+                    </div>
+                    <div id="opp-lifepoints" class="life-points">20</div> 
+                    
+                    <!-- <div id="info-results-etc">More game info, e.g. results of finished matches this round</div> -->
+                </div>
+        
+                <div id="chat-box" >
+                    <!-- @TODO: prevent resizing of read-only text area -->
+                    <div id="chat-log"  >
+                        tcgplaya: this is fantastic!<br>
+                        mtg4life: bro tell me about it!<br>
+                        <!-- @TODO: How to autoscroll to bottom of chat log? -->
+                        <!-- Safe from Add Script Attacks?  Such as...
+                            <script>document.getElementById('play').innerHTML = "<div>HAHAHAHAHAHA</div>"</script> 
+                            Seems like we're okay but there could be othe vulnerabilities -->
+                    </div>
+                    <form id="chat-form">
+                        <input id="chat-input" name="chat-input" type="text" placeholder="Type something here"><br>
+                        <span class="instruction">Press Enter to send.</span>
+                    </form>
+                </div>
+                 <br>
+        
+                <div id="my-graveyard" class="disable-scrollbars" style="display: flex" >
+                    <!--  Cards in your Graveyard show up here  -->
+                    
+                </div>
+        
+                <div id="my-exiles" class="disable-scrollbars" style="display: none" >
+                </div>
+        
+                <button id="toggle-gy-exile">Show Exiled</button>
+        
+                <!-- Draws for the turn will happen automatically but for now... -->
+                <div style="width: 180px; display: flex; flex-wrap: wrap">
+                    <button id="shuffle-btn" class="action-btn">Shuffle</button>
+                    <button id="roll-btn" class="action-btn">Roll 2 D6</button>
+                    <button id="draw7-btn" class="action-btn">Draw 7</button>
+                    <button id="mull-btn" class="action-btn">Mull</button>
+                    <button id="scry-btn" class="action-btn">Scry</button>
+                    <button id="untap-btn" class="action-btn">Untap</button>
+                    <button id="nextphase-btn" class="action-btn">Proceed</button>
+                    <button id="draw-btn" class="action-btn">Draw</button> 
+                    <button id="view3-btn" class="action-btn">Top 3</button>
+                    <button id="tutor-btn" class="action-btn">Srch Lib</button>
+                    <button id="reveal-btn" class="action-btn" data-target="#reveal-modal">Reveal H</button>
+                    <button id="resign-btn" class="action-btn">Resign</button>
+                </div>
+                
+                <dialog id="scry-modal" class="play-modal">
+                    <img id="scryed-card" src="" alt="">
+                    <form class="modal-btn-panel" method="dialog">
+                        <button id="unshift-btn" class="action-btn" value="default">Bottom it</button>
+                        <button id="ontop-btn" class="action-btn" value="cancel">Leave on top</button>
+                    </form>
+                </dialog>
+        
+                <dialog id="view3-modal" class="play-modal">
+                    <div id="three-cards">
+        
+                    </div>
+                    <div id="card-positions">
+                        <div class="position">3rd</div><div class="position">2nd</div><div class="position">1st (top)</div>
+                    </div>
+                    <form class="modal-btn-panel" method="dialog">      <!-- FINALIZE MODALs -->
+                        <div>
+                            <label for="spec-order" style="color: white">New order: &nbsp; &nbsp;</label>
+                            <input type="text" id="spec-order" placeholder="2,1,3">
+                        </div>    
+                        <button id="shuffle-btn-2" class="action-btn" value="cancel">Shuffle</button>
+                        <button id="reorder-btn" class="action-btn" value="default">Reorder</button>
+                        <button id="asis-btn" class="action-btn" value="cancel">Leave as is</button>
+                    </form>
+                </dialog>
+        
+                <dialog id="reveal-modal" class="play-modal"> <!-- how to FADE?  DARKEN backdrop?  And keep from closing on outside click? -->
+                    <div class="modal-content">
+                        <h3 class="modal-header">You're viewing your opponent's hand:</h3>
+                    
+                        <div id="opp-hand">     </div>
+        
+                        <form class="modal-btn-panel" method="dialog">
+                            <button class="action-btn" value="cancel">Done</button>
+                        </form>
+                    </div>
+                </dialog>
+                
+            </div>
+            
+        </div>
+        <!-- <script src="play.js"></script> -->
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="jquery.js"></script>
-    <!-- <script src="ajax.js"></script> -->
+    <!-- <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.js"></script> -->
     <script src="app.mjs"></script>
     <script src="drafting.js"></script>
 
