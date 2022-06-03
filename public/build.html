@@ -1,15 +1,19 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deck Assembly</title>
+    <!-- <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.css"> -->
     <link rel="stylesheet" href="styles.css"/>
 
-</head> -->
-<div>
+</head>
+<body>
     <div id="build">
+        <div id="build-timer">
+            <span id="build-min">5</span> : <span id="build-sec">59</span>
+        </div>
         <div id="card-pool">
             <!-- 
             <div style="width: 159px; height: 221px"><img src="images/684.jpeg" width="159px" height="221px" alt=""></div>
@@ -18,47 +22,51 @@
             -->
         </div>
         <br>
-        <span id="excluded-count" class="qty">0</span>
-        <br>
-        <button id="thin-deck" class="build-btn">Exclude Selected</button>
-        <br>
+        <div id="qtys-and-controls">
+            <span id="excluded-count" class="qty">0</span>
+            <br>
+            <button id="thin-deck" class="std-btn remove-btn">X selected</button>
+            <br>
+            <br>
+            <div id="choose-basics">        
+                <div class="basic-land">    <!-- @TODO: Cycle through lands 1-3 with click -->
+                    <img src="images/898.jpeg" style="max-height: 100%" alt="Basic Plains"/>
+                </div>
+                <div class="basic-land">
+                    <img src="images/895.jpeg" style="max-height: 100%" alt="Basic Island"/>
+                </div>
+                <div class="basic-land">
+                    <img src="images/876.jpeg" style="max-height: 100%" alt="Basic Swamp"/>
+                </div>
+                <div class="basic-land">
+                    <img src="images/892.jpeg" style="max-height: 100%" alt="Basic Mountain"/>
+                </div>
+                <div class="basic-land">
+                    <img src="images/889.jpeg" style="max-height: 100%" alt="Basic Forest"/>
+                </div>
+            </div>
 
-        <div id="choose-basics">        
-            <div class="basic-land">    <!-- @TODO: Cycle through lands 1-3 with click -->
-                <img src="images/898.jpeg" style="max-height: 100%" alt="Basic Plains"/>
+            <br>
+            <div id="land-quantities">
+                <span id="plains-qty" class="qty">0</span>
+                <span id="island-qty" class="qty">0</span>
+                <span id="swamp-qty" class="qty">0</span>
+                <span id="mountain-qty" class="qty">0</span>
+                <span id="forest-qty" class="qty">0</span>
             </div>
-            <div class="basic-land">
-                <img src="images/895.jpeg" style="max-height: 100%" alt="Basic Island"/>
+            <br>
+            <span>Click a land quantity # to increase it.</span>
+            <span>Option/Alt + Click to decrease it.</span>
+            <br>
+            <span>When land quantities are all set, click "Add lands" and then "Submit deck" to battle.</span>
+            <br>
+            <div>                                    <!--action="submit"-->
+                <button id="add-submit" class="std-btn build-btn" >Add lands</button>   <!--type="submit"-->
             </div>
-            <div class="basic-land">
-                <img src="images/876.jpeg" style="max-height: 100%" alt="Basic Swamp"/>
-            </div>
-            <div class="basic-land">
-                <img src="images/892.jpeg" style="max-height: 100%" alt="Basic Mountain"/>
-            </div>
-            <div class="basic-land">
-                <img src="images/889.jpeg" style="max-height: 100%" alt="Basic Forest"/>
-            </div>
+            <br>
         </div>
-
-        <br>
-        <div id="land-quantities">
-            <span id="plains-qty" class="qty">0</span>
-            <span id="island-qty" class="qty">0</span>
-            <span id="swamp-qty" class="qty">0</span>
-            <span id="mountain-qty" class="qty">0</span>
-            <span id="forest-qty" class="qty">0</span>
-        </div>
-        <br>
-        <span>Click a # to increase land quantity.</span>
-        <span>Option/Alt + Click to decrease quantity.</span>
-        <br>
-        <form id="submit-deck" action="submit">
-            <button class="build-btn" type="submit">Submit deck</button>
-        </form>
 
         <!-- <script src="build.js"></script> -->
     </div>
-    
-</div>
-<!-- </html> -->
+</body>
+</html>
