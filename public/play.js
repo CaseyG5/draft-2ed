@@ -62,7 +62,11 @@ const shuffle2 = document.getElementById('shuffle-btn-2');
 const reorderBtn = document.getElementById('reorder-btn');      // @TODO: change to drag & drop
 const keepAsIsBtn = document.getElementById('asis-btn');
 
-const oppHand = document.getElementById('opp-hand');
+// For modal to see revealed hand
+const oppHand = document.getElementById('opp-hand');            // <div>
+
+// For modal to search library
+const myLibrary = document.getElementById('my-library');
 
 // Quantity elements for the 6 kinds of mana
 const colorless = document.getElementById('colorless-qty');     // <span>
@@ -88,11 +92,12 @@ let currentSelectedCard;
 
 
 shuffleDeck();  // auto shuffle first
-//for(let c = 0; c < 7; c++ ) addCardToHand( cardsInLibrary.pop() );  // to automatically draw 7
+//for(let c = 0; c < 7; c++ ) addCardToHand( cardsInLibrary.pop() );    // to automatically draw 7
 
 // BUTTON CLICK LISTENERS
 shuffleBtn.addEventListener('click', () => {
     shuffleDeck();
+    //clientSocket.emit("privateMsg", { ourDraftID: myDraftID, ourMatchID: myMatchID, msg: "shuffles deck" } );
 });
 
 rollBtn.addEventListener('click', () => {
@@ -100,21 +105,23 @@ rollBtn.addEventListener('click', () => {
     let die2 = randomInt(6) + 1;
 
     notifyOpponent(`rolled a ${die1} and a ${die2} = ${die1 + die2}`);
-    //clientSocket.emit("diceRolled", { ourDraftID: myDraftID, ourMatchID: myMatchID, rollValue: (die1 + die2) } );
+    // AS OPPOSED TO:  clientSocket.emit("diceRolled", { ourDraftID: myDraftID, ourMatchID: myMatchID, rollValue: (die1 + die2) } );
     alert(`You rolled a ${die1} and a ${die2}  =  ${die1 + die2}`);
 });
 
-// @TODO:  Fix this.  Behaves strangely for some reason.  Requires multiple clicks.  Why?
+// UNTAP ALL button click
 untapBtn.addEventListener( 'click', () => {
-    let tappedCards = document.getElementsByClassName('tapped');
-    console.log( tappedCards );
-    for( card of tappedCards) {
-        card.classList.remove('tapped');
+    let tappedCards = document.querySelectorAll('.tapped'); // querySelectorAll() WORKED!
+                                                            // Previous behavior with getElementsByClassName()
+    for( card of tappedCards) {                             // was a bit strange, requiring multiple clicks
+        card.classList.remove('tapped');                    // only every other tapped card would be untapped each time
     }
+    notifyOpponent("untaps");
     turnProgress.value = 12.5;
     turnPhase.innerText = "Start turn";
 });
 
+// DRAW 1 button click
 drawBtn.addEventListener( 'click', () => {
     if (cardsInLibrary.length == 0) {
         alert("0 cards left to draw — game lost");
@@ -125,29 +132,35 @@ drawBtn.addEventListener( 'click', () => {
         return;
     }
     addCardToHand( cardsInLibrary.pop() );
+    notifyOpponent("draws for the turn");
 });
 
+// DRAW 7 button click
 draw7Btn.addEventListener( 'click', () => {
     if ( cardsInLibrary.length >= 7 && numCardsInHand == 0) {
         for(let c = 0; c < 7; c++ ) addCardToHand( cardsInLibrary.pop() );
     }
 });
 
+// MULLIGAN button click
 mullBtn.addEventListener('click', () => {
+    notifyOpponent(`mulligans to ${numCardsInHand - 1}` );
     mulligan(numCardsInHand);
 });
 
+// SCRY button click (shows top card)
 scryBtn.addEventListener('click', () => {
     const topCard = cardsInLibrary[cardsInLibrary.length-1];    // get the top card (last card in array)
     scryImg.src = `images/${topCard}.jpeg`;             // show image of top card
     scryImg.classList.add('rounded');
     scryModal.showModal();
 });
-
+    // TO-BOTTOM button (move top card to bottom)
     toBottomBtn.addEventListener('click', () => {
         cardsInLibrary.unshift( cardsInLibrary.pop() );     // Shift LEFT = move item at pos 0 to top;  
     });                                                     // Shift RIGHT (UNshift) = top to pos 0
 
+// "VIEW TOP 3 CARDS" button click
 view3Btn.addEventListener('click', () => {
     for(let i = cardsInLibrary.length-3; i<cardsInLibrary.length; i++) {
         if(i < 0) continue;                                             // if undefined, go to next index
@@ -159,22 +172,27 @@ view3Btn.addEventListener('click', () => {
     }
     view3Modal.showModal();
 });
+    // SHUFFLE button click
     shuffle2.addEventListener('click', () => {
-        clearModalImages();                         // may be a more efficient way
+        clearChildImages(threeCardDiv);                         // @TODO: more efficient way to do this??
         shuffleDeck();
     });
+    // REORDER button click
+    // Sequence Input box will be replaced with drag-&-drop ability
     reorderBtn.addEventListener('click', () => {
-        clearModalImages();
+        // clearChildImages(threeCardDiv);
         // grab value from input 
         const orderAsArray = document.getElementById('#spec-order').value.split(',');
         //and swap cards
         // clear input
         // BETTER approach: allow them to drag to reorder
     });
+    // "KEEP AS IS" button click
     keepAsIsBtn.addEventListener('click', () => {
-        clearModalImages();
+        clearChildImages(threeCardDiv);
     })
 
+// "REVEAL HAND to opponent" button click
 revealBtn.addEventListener('click', () => {
     document.getElementById('reveal-modal').showModal();
 //     // that will be replaced by...
@@ -182,6 +200,7 @@ revealBtn.addEventListener('click', () => {
 //     //clientSocket.emit("handRevealed", { ourDraftID: myDraftID, ourMatchID: myMatchID, hand: cardsInHand} );
 });
 
+// "PROCEED TO NEXT PHASE" button click
 nextPhaseBtn.addEventListener('click', () => {
     if(turnProgress.value <= 87.5) {
         turnProgress.value += 12.5;
@@ -190,6 +209,47 @@ nextPhaseBtn.addEventListener('click', () => {
     }
 });
 
+// Temporary Button to Search Library that brings up an alert
+// Eventually this will be replaced with a larger Modal showing all cards in library with a click
+// event listener on each to select the desired card and move it from libaray to hand
+tutorBtn.addEventListener( 'click', () => {
+    notifyOpponent("searches library");
+    document.getElementById('search-modal').showModal();
+    myLibrary.innerHTML = "";
+
+    let cardToGet = 0;
+    let noneleft = false;
+
+    for(let j = 0; j< 7; j++) {
+        let rowX = document.createElement('div');
+        rowX.classList.add('lib-row');
+        for(let i = 0; i < 5; i++ ) {
+            if( !cardsInLibrary[5*j + i] ) {
+                noneleft = true;
+                break;          // if there's no next card then stop
+            }
+            let cImg = document.createElement('img');
+            cImg.src = `images/${cardsInLibrary[5*j + i]}.jpeg`;
+            cImg.style.maxWidth = "159px";
+            cImg.style.maxHeight = "221px";
+            cImg.style.zIndex = `${j}`;
+            cImg.classList.add('rounded-sm');
+            cImg.addEventListener('click', (evt) => {
+                cardToGet = Number( evt.currentTarget.src.slice(7,10) );
+                evt.currentTarget.style.opacity = "0.4";
+                cardsInLibrary.splice( cardsInLibrary.indexOf( cardToGet, 0 ), 1); 
+                addCardToHand( cardToGet );
+            })
+            rowX.appendChild(cImg);
+        }
+        myLibrary.appendChild(rowX);
+        if(noneleft) break;
+    }  
+
+    shuffleDeck();  // auto shuffle
+});
+
+// RESIGN/CONCEDE GAME button click
 resignBtn.addEventListener('click', () => {
     const affirmative = confirm("Are you sure you want to resign?");
     if (affirmative) {
@@ -199,12 +259,8 @@ resignBtn.addEventListener('click', () => {
     }  
 });
 
-function clearModalImages() {
-    while(threeCardDiv.lastChild) threeCardDiv.removeChild(threeCardDiv.lastChild);
-}
 
-
-// DRAWS 1 card, adding various event listeners for it
+// DRAWS 1 card to hand, adding various event listeners to/for it
 function addCardToHand( card ) {
     cardsInHand.push(card);
     numCardsInHand++;
@@ -229,6 +285,11 @@ function addCardToHand( card ) {
             landsArea.style = "border: 0px";
         },200);
     });
+
+    // cardImage.addEventListener('auxclick', (e) => {
+    //     e.preventDefault();
+    //     //toggle transform
+    // });
 
     cardImage.addEventListener( 'dblclick', event => {
         // if parent element is nonLandArea or landArea...
@@ -369,18 +430,6 @@ exileZone.addEventListener( 'drop', event => {
     //exileZone.style = "";
 });
 
-
-// Temporary Button to Search Library that brings up an alert
-// Eventually this will be replaced with a larger Modal showing all cards in library with a click
-// event listener on each to select the desired card and move it from libaray to hand
-tutorBtn.addEventListener( 'click', () => {
-    let cardToGet = Number( prompt('Which card would you like to grab? (Enter a card #)') );
-    if( cardsInLibrary.includes( cardToGet, 0 ) ) {
-        cardsInLibrary.splice( cardsInLibrary.indexOf( cardToGet, 0 ), 1); 
-        addCardToHand( cardToGet );
-    } else alert("Card not found");
-});
-
 // Button to Toggle display of MY Graveyard and Exile zones
 document.getElementById('toggle-gy-exile').addEventListener( 'click', (evt) => {
     if( myGyShown ) {
@@ -503,7 +552,6 @@ function mulligan(numCardsHad) {
     for(let i = 0; i < numCardsHad - 1; i++) addCardToHand( cardsInLibrary.pop() );
 }
 
-
 // Mana quantity adjustments
 document.getElementById('c-symbol').addEventListener( 'click', (evt) => {
     adjustQuantity(colorless, 'c');   // change qty of colorless mana
@@ -602,4 +650,8 @@ function getColor( char ) {
         case 'r':  return "red";
         case 'g':  return "rgb(64, 255, 47)";
     }
+}
+
+function clearChildImages( parentElem ) {
+    while(parentElem.lastChild) parentElem.removeChild(parentElem.lastChild);
 }
