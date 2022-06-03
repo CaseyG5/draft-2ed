@@ -6,6 +6,8 @@ let cardsSeen = document.getElementById("cards-seen");
 let passBtn = document.getElementById('pass-btn');
 
 let prevRotated = false;
+let tempCard1;
+
 
 function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
     console.log("ENTERING draftOnePack()")
@@ -16,7 +18,7 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
     let cardObjects = []
     let cardIsChosen = false;
     let numOfCurrentPick = 1;
-    let tempCard1;
+    
     let cardsPickedThisPack = [];
 
     console.log("We're on pack # " + packNumber);
@@ -53,16 +55,16 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
                     cardIsChosen = false;
                     
                     if (packNumber < 3) {           // if on 1st/2nd pack, request another
+                        clientSocket.emit('nextPackRequested', {draftNum: myDraftID, playerNum: myPlayerID} );
+                        btnNext.hidden = false;  // show "Next card" button again
                         // Show "Open pack" screen again
                         $('#draft').attr('hidden', true);  // hide draft frame
                         $('#open').attr('hidden', false);    // show open frame
-                        clientSocket.emit('nextPackRequested', {draftNum: myDraftID, playerNum: myPlayerID} );
-                        btnNext.hidden = false;  // show "Next card" button again
                         
                         // @LOOK INTO: reset on('rotatedCards') ???
                     }
                     else if(packNumber == 3) {
-                        //pageRequest('build.html');
+                        // switch to build screen;
                         $.getScript('build.js');
                         $('#draft').attr('hidden', true);
                         $('#build').attr('hidden', false);
@@ -76,9 +78,9 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
 
                     if(!prevRotated) {   // only add event listener for rotated cards if we haven't already
                         clientSocket.on('rotatedCards', (data) => {
+                            
                             console.log("rotated cards received");
                             myPack = data.cards;                 // would it help to just use myPack in app.mjs??
-                            console.log("myPack is now: " + myPack);
                             
                             while(cardsSeen.lastChild) cardsSeen.lastChild.remove(); //cardsSeen.innerHTML = "";
                             
@@ -113,7 +115,7 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
             card.id = `${iNum}`;
         }
         else if( !document.getElementById(`${iNum}a`) ) card.id = `${iNum}a`;
-        else card.id = `${iNum}b`;
+        else card.id = `${iNum}b`;      // EXTREMELY unlikely a pack would have 3 of a card, but JIC
 
         backing.classList.add('backing');
         // backing.style.zIndex = currentZ;            // not neeeded
@@ -131,24 +133,28 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
                 
                 backing.style.zIndex = 16;      // bring card to front
                 card.style.opacity = "0.4";     // and darken it so we know it was selected
-                const chosenCardNum = Number( `${card.id}`.slice(0,3) );  // @TODO: try let!
+                let chosenCardNum = Number( `${card.id}`.slice(0,3) );  // @TODO: try let!
 
                 console.log("keeping card # " + chosenCardNum + ", pick " + numOfCurrentPick);
-                if(numOfCurrentPick == 1) tempCard1 = chosenCardNum;
+                if(numOfCurrentPick == 1) {
+                    tempCard1 = chosenCardNum;
+                    console.log("captured card 1 as " + tempCard1);
+                }
 
                 cardsPickedThisPack.push( chosenCardNum );
-
+                // tempCard1Again = cardsPickedThisPack.pop();                   // Will this retain it?
                 console.log("cardsPicked now has: " + cardsPickedThisPack);
+
                 myPack.splice( myPack.indexOf( chosenCardNum, 0 ), 1 );
 
                 // UNCORRUPT DATA (programmatic duct tape)
                 if(numOfCurrentPick == 16 || numOfCurrentPick == 30) { //wipe that shit clean!
                     console.log("Attempting to clean up this mess!")
-                    let card2 = cardsPickedThisPack.pop();
+                    let card2 = chosenCardNum;
                     while(cardsPickedThisPack[0]) cardsPickedThisPack.pop();
                     cardsPickedThisPack.push(tempCard1);
                     cardsPickedThisPack.push(card2);
-                    console.log("cards 1 & 2: " + tempCard1 + " " + card2);
+                    console.log("cards 1 & 2: " + tempCard1 + ", " + card2);
                 }
 
                 numOfCurrentPick++;
