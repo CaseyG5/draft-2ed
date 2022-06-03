@@ -44,9 +44,11 @@ app.all('*', (req, resp) => {
     resp.status(404).send('resource not found');
 });
 
+
+// START up our Express HTTP server
 server.listen(PORT, () => console.log(`Express HTTP server listening on port ${PORT}`) );
 
-
+// When a user connects, add the many event listeners
 io.on('connection', (socket) => {
     
     console.log("User connected and given ID " + socket.id);
