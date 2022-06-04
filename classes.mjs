@@ -5,25 +5,66 @@ class BasicPlayer {
     constructor(name, id) {
         this.name = name;
         this.id = id;
-        this.gamesWon = 0;
-        this.gamesPlayed = 0;
+        this.gamesWonThisRound = 0;
+        this.gamesPlayedThisRound = 0;
+        this.matchPoints = 0;
+        this.gamesWonTotal = 0;
+        this.gamesPlayedTotal = 0;
     }
 
     rollDice() {
-        let die1 = Math.floor(Math.random() * 6) + 1;
-        let die2 = Math.floor(Math.random() * 6) + 1;
+        let die1 = this.randomInt(6) + 1;
+        let die2 = this.randomInt(6) + 1;
         console.log(`Player ${this.name} rolls a ${die1} and a ${die2} = ${die1 + die2}`);
         return die1 + die2;
     }
 
-    addRoundScore(won, played) {
-        this.gamesWon += won;
-        this.gamesPlayed += played;
+    addGameResult( gamePoint ) {  // 0, 0.5, or 1  
+        this.gamesWonThisRound += gamePoint;  // @TODO: what about draws!
+        this.gamesPlayedThisRound++;
+        let wantAnotherGame = false;
+                                            
+        if(this.gamesWonThisRound >= 2) 
+            matchPoints += 3;               // match over, this player wins their match
+
+        else if(this.gamesWonThisRound == 1.5 && this.gamesPlayedThisRound == 3) 
+            matchPoints += 1;               // match over, draw
+
+        else if(this.gamesWonThisRound >= 0.5 && this.gamesPlayedThisRound < 3 ) 
+            wantAnotherGame = true;         // "play another game"
+        // else 1 or 2 games could have been played but we only have 0.5 point or 1 point
+        // else 0-2, loss, match over     
+        
+        // @TODO:  idea to refactor logic using fractions, e.g. for games played 1, 2, or 3, check ratio
+        // like 1/2 or 1.5/2 needs a third game... but 2/3 or 2/2 has won... likewise 1/3 or 0/2 has lost
+        
+        return wantAnotherGame;                      
+    }
+
+    addRoundScore() {
+        this.gamesWonTotal += this.gamesWonThisRound;
+        this.gamesPlayedTotal += this.gamesPlayedThisRound;
+        this.gamesWonThisRound = 0;                     // reset for next round
+        this.gamesPlayedThisRound = 0;
+    }
+
+    forfeitMatch() {
+        let result = this.addGameResult(0);                         // add game losses
+        while(result != 0) {  result = this.addGameResult(0);  }    // until match is lost
+    }
+
+    autoWinMatch() {
+        let result = this.addGameResult(1);
+        while(result != 0) {  result = this.addGameResult(1);  }    // until match is lost
     }
 
     calcGWP() {
-        if(this.gamesWon == 0 || this.gamesPlayed == 0) return 0;
-        return this.gamesWon / this.gamesPlayed;    // @TODO: format to 2 or 3 decimal points
+        if(this.gamesWonTotal == 0) return 0;
+        return this.gamesWonTotal / this.gamesPlayedThisRound;    // @TODO: format to 2 or 3 decimal points
+    }
+
+    randomInt( max ) {
+        return Math.floor(Math.random() * max);  // returns an integer from 0 to max-1
     }
 }
 
@@ -189,6 +230,8 @@ export default class Tournament {
 
          // (all matches have finished)
         if( this.timer.timeLeft() )  this.timer.stop();     // stop timer
+
+        // @TODO: if there's still time left...
         
         // inc round#
         this.round++;
