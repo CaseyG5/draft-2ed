@@ -1,10 +1,10 @@
-let myPicks = document.getElementById("card-pool");
-let excludedCount = document.getElementById("excluded-count");
-let excludeBtn = document.getElementById('thin-deck');
-
 const buildMin = $('#build-min');  // shows minutes remaining
 const buildSec = $('#build-sec');  // shows seconds
 const buildTimerDiv = $('#build-timer');    // holds them both
+
+let myPicks = document.getElementById("card-pool");
+let excludedCount = document.getElementById("excluded-count");
+let excludeBtn = document.getElementById('thin-deck');
 
 let plainsQty = document.getElementById('plains-qty');
 let islandQty = document.getElementById('island-qty');
@@ -13,10 +13,6 @@ let mountainQty = document.getElementById('mountain-qty');
 let forestQty = document.getElementById('forest-qty');
 
 let submitBtn = document.getElementById('add-submit');   
-
-// @TODO: Display timer (time remaining) on build.html page
-// @TODO: Fix bug regarding cards removed persisting AND
-//        Count for cards removed not resetting after cuts made
 
 let cards = allCardsKept;       // ref to variable in app.mjs
 let rejects = [];
@@ -27,9 +23,14 @@ let altPressed = false;
 
 submitBtn.hidden = true;
 
+// @TODO: Display timer (time remaining) on build.html page
+//        necessary to stop, switch, then start?
+myTimer.setDisplayFunc( pickTimer(buildTimerDiv, buildMin, buildSec) );   // set timer to display on build page
+
 console.log("Cards should be the same as allCards. Is it? -->" + cards);
 // Begin by showing all 45 cards drafted
-for ( let c = 0; c < 45; c++ ) {
+
+for ( let c = 0; c < 45; c++ ) {                // show all 45 cards drafted
     showCardOnGrid( c );
 }
 
@@ -46,7 +47,8 @@ excludeBtn.addEventListener( 'click', e => {
 
     console.log("cards are now: " + cards);
 
-    //clickable = false;        
+    document.cookie = `deck=${cards}`;                                              // SAVE GAME STATE  
+    document.cookie = `landsadded=false`;
 
     // redraw cards on grid (picks - cuts)
     excludedCount.innerText = `${rejects.length}`;
@@ -54,12 +56,13 @@ excludeBtn.addEventListener( 'click', e => {
  
     numCuts++;
     if(numCuts == 1) {
-        submitBtn.hidden = false;       // Show button to "Add lands"
-    }
+        submitBtn.hidden = false;       // Show button to "Add lands"       @TODO: better to show regardless up to 2X?
+    }                                                                           // if yes, move to last line after loop to show cards;
     else if(numCuts == 2) {
         clickable = false;              // cards re-shown will no longer be clickable
         excludeBtn.hidden = true;       // hide exclude button since it's no longer needed
         excludedCount.hidden = true;    // hide # of cards cut for the same reason     
+        document.cookie = `cutsdone=true`;                                          // SAVE GAME STATE
     }
                                                                    // although...
     for( let c = 0; c < cards.length; c++ ) showCardOnGrid(c);      // @TODO: better to avoid redrawing ALL cards??
@@ -80,6 +83,8 @@ submitBtn.addEventListener( 'click', (e) => {
         clientSocket.emit('deckAssembled', { draftNum: myDraftID, playerNum: myPlayerID, theDeck: cards } );
     }
     else {
+        document.cookie = `cutsdone=true`;                                          // SAVE GAME STATE      
+
         clickable = false;
 
         // add lands to deck and proceed to first round
@@ -103,6 +108,9 @@ submitBtn.addEventListener( 'click', (e) => {
         console.log("Adding " + totalLands + " lands");
         // show lands added
         for( let k = (cards.length - totalLands); k < cards.length; k++ ) showCardOnGrid(k);
+
+        document.cookie = `deck=${cards}`;                                          // SAVE GAME STATE 
+        document.cookie = `landsadded=true`;
 
         submitBtn.innerText = "Submit deck";
         ready = true;

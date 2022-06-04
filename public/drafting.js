@@ -1,5 +1,3 @@
-//const { pageRequest } = require('./ajax');
-
 let btnNext = document.getElementById("next-btn");
 let imageOfCard = document.getElementById("top-card");
 let cardsSeen = document.getElementById("cards-seen");
@@ -8,9 +6,8 @@ let passBtn = document.getElementById('pass-btn');
 let prevRotated = false;
 let tempCard1;
 
-
 function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
-    console.log("ENTERING draftOnePack()")
+    
     // myPack     (use myPack variable from app.mjs)
     let indexOfTopCard = 14;
     let imgNum;
@@ -22,7 +19,6 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
     let cardsPickedThisPack = [];
 
     console.log("We're on pack # " + packNumber);
-    console.log("Init vars - cardsPickedThisPack should be blank: " + cardsPickedThisPack);
 
     // Show 1st (TOP) card of new pack right away after "opening"
     imgNum = myPack[indexOfTopCard--];              // number of myPack[14] ... index = 13
@@ -61,13 +57,14 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
                         $('#draft').attr('hidden', true);  // hide draft frame
                         $('#open').attr('hidden', false);    // show open frame
                         
-                        // @LOOK INTO: reset on('rotatedCards') ???
+                        // @LOOK INTO: reset on('rotatedCards') ?
                     }
                     else if(packNumber == 3) {
                         // switch to build screen;
                         $.getScript('build.js');
-                        $('#draft').attr('hidden', true);
-                        $('#build').attr('hidden', false);
+                        $('#draft').attr('hidden', true);   // hide draft frame
+                        $('#build').attr('hidden', false);  // show build frame
+                        document.cookie = `page=build`;                             // SAVE GAME STATE
                     }
                     passBtn.removeEventListener('click', passBtnHandler);
                     btnNext.removeEventListener('click', nextBtnHandler);
@@ -81,12 +78,12 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
                             
                             console.log("rotated cards received");
                             myPack = data.cards;                 // would it help to just use myPack in app.mjs??
+                            document.cookie = `pack=${myPack}`;                     // UPDATE/SAVE myPack
                             
                             while(cardsSeen.lastChild) cardsSeen.lastChild.remove(); //cardsSeen.innerHTML = "";
                             
                             cardIsChosen = false;
                             
-                            console.log("displaying cards received");
                             // display cards of pack received
                             for( let i = myPack.length-1; i >= 0; i-- ) {
                                 displayCardBelow( myPack[i], i );
@@ -101,7 +98,6 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
                         });
                     }
                 }   
-                
             });
         }
     });
@@ -111,18 +107,16 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
         let card = document.createElement('img');
         
         if( !document.getElementById(`${iNum}`) )  {
-            console.log( "Ensuring card ID is NOT already in use." );
             card.id = `${iNum}`;
         }
         else if( !document.getElementById(`${iNum}a`) ) card.id = `${iNum}a`;
         else card.id = `${iNum}b`;      // EXTREMELY unlikely a pack would have 3 of a card, but JIC
 
         backing.classList.add('backing');
-        // backing.style.zIndex = currentZ;            // not neeeded
 
         card.classList.add('seen');
         card.src = `images/${iNum}.jpeg`;
-        card.style.opacity = "1";               // card.setAttribute('opacity', 1); does NOT work
+        card.style.opacity = "1";               // card.setAttribute('opacity', "1");  SAME?
 
         backing.appendChild(card);
         cardsSeen.appendChild(backing);
@@ -146,24 +140,25 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
                 console.log("cardsPicked now has: " + cardsPickedThisPack);
 
                 myPack.splice( myPack.indexOf( chosenCardNum, 0 ), 1 );
+                document.cookie = `pack=${myPack}`;
 
-                // UNCORRUPT DATA (programmatic duct tape)
+                // UNCORRUPT DATA (programmatic duct tape?)
                 if(numOfCurrentPick == 16 || numOfCurrentPick == 30) { //wipe that shit clean!
-                    console.log("Attempting to clean up this mess!")
+                    console.log("Attempting to clean up the mess");
                     let card2 = chosenCardNum;
                     while(cardsPickedThisPack[0]) cardsPickedThisPack.pop();
                     cardsPickedThisPack.push(tempCard1);
                     cardsPickedThisPack.push(card2);
                     console.log("cards 1 & 2: " + tempCard1 + ", " + card2);
                 }
+                document.cookie = `packpicks=${cardsPickedThisPack}`;   // SAVE GAME STATE
 
                 numOfCurrentPick++;
 
-                console.log("myPack now has " + myPack.length + " cards left");
                 passBtn.hidden = false;         // show Pass button 
 
-                if(myPack.length == 0) {                                // no cards left to choose from
-                    passBtn.innerText = "Next pack"                       // Change button text to "Take it"
+                if(myPack.length == 0) {                                // no cards left to choose from so
+                    passBtn.innerText = "Take it"                       // Change button text to "Take it"
                     console.log(cardsPickedThisPack)
                     addCardsFromPack(cardsPickedThisPack);
                     console.log("just saved " + cardsPickedThisPack.length + " cards total from pack # " + packNumber);
@@ -176,20 +171,4 @@ function draftOnePack( packNumber, draftID, playerID, addCardsFromPack) {
         });
         cardObjects.push(card);
     }
-    console.log("EXITING draftOnePack()");
-    return;
 }
-
-// let cardsJSON = JSON.parse( fs.readFileSync('2ED.json', {encoding:'utf-8', flag:'r'}) );
-// let cardsInSet = cardsJSON["cards"];
-
-// console.log( cardsInSet[1]["multiverseid"]);
-// console.log( cardsInSet[1]["rarity"] );
-
-// for( let card of cardsInSet ) {
-//     const id = card["multiverseid"];
-//     if( card["rarity"] == "Basic Land" ) {
-//             console.log(`${id}, `);
-//             rares.push(card);
-//     }
-// }
