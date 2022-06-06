@@ -7,7 +7,7 @@ let cardsInLibrary = [806, 672, 744, 657, 782, 751, 623, 780, 610, 792,
                       892, 892, 892, 892, 889, 889, 889, 889, 889, 889];
 
 const phaseNames = ["Start turn", "Untap", "Upkeep", "Draw", "1st Main", 
-                    "Combat", "2nd Main", "End of turn", "END of end"];
+                    "Combat", "2nd Main", "End of turn"];
 
 // Game play zones
 const hand = document.getElementById('hand');
@@ -30,6 +30,7 @@ const playerName = document.getElementById('player-name');          // <span>
 const turnNum = document.getElementById('turn-number');             // <span>
 const turnPhase = document.getElementById('turn-phase');            // <div>
 const turnProgress = document.getElementById('turn-progress');      // <progress>
+const progBar = document.getElementById('prog-bar');                // <div> inside <div>
 const myLifePoints = document.getElementById('my-lifepoints');      // <span>
 const oppLifePoints = document.getElementById('opp-lifepoints');    // <span>
 
@@ -84,8 +85,9 @@ const red = document.getElementById('red-qty');
 const green = document.getElementById('green-qty');
 // let colorlessQty = 0, whiteQty = 0, blueQty = 0, blackQty = 0, redQty = 0, greenQty = 0;
 
-let myRollValue = 0;
-let oppRollValue = 0;
+let myTurn = false;
+let myRollValue;
+let oppRollValue;
 let cardsInHand = [];
 let numCardsInHand = 0;
 let landsInPlay = [];
@@ -101,7 +103,6 @@ let currentSelectedCard;
 
 shuffleDeck();  // auto shuffle first
 //for(let c = 0; c < 7; c++ ) addCardToHand( cardsInLibrary.pop() );    // to automatically draw 7
-
 
 
 // DRAWS 1 card to hand, adding various event listeners to/for it
@@ -373,24 +374,50 @@ function mulligan(numCardsHad) {
     for(let i = 1; i < numCardsHad; i++) addCardToHand( cardsInLibrary.pop() );  // start with i = 1 instead of checking i < num - 1
 }
 
+// HANDLER function for untap step
+const handleUntapping = () => {
+    let tappedCards = document.querySelectorAll('.tapped'); // querySelectorAll() WORKED!
+                                                            // Previous behavior with getElementsByClassName()
+    for( card of tappedCards) {                             // was a bit strange, requiring multiple clicks
+        card.classList.remove('tapped');                    // only every other tapped card would be untapped each time
+    }
+    notifyOpponent("untaps");               // @TODO: IMPORTANT - create another "tapped" class so we don't untap opponents cards
+    // turnProgress.value = 12.5;
+};
+
 // Phase update helper function
 function updatePhase(newValue) {            // proceeds to the next phase of the turn
     let index = (newValue / 12.5);
-    turnPhase.innerText = phaseNames[index];
+    let currentPhase = phaseNames[index];
+    turnPhase.innerText = currentPhase;
+
+    if(myTurn) {
+        if(currentPhase == "Untap") handleUntapping();
+        else if(currentPhase == "Draw") handleDraw();
+    }
+    let red = randomInt(155) + 100; let green = randomInt(155) + 100; let blue = randomInt(155) + 100;
+    progBar.style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
+    turnPhase.style.color = `rgb(${red}, ${green}, ${blue})`;
+    console.log(`rgb(${red}, ${green}, ${blue})`);
 }
 
         let myName = "my name"; let myOppName = "opp's name";
 // HANDLER function for phase update click/event
 function handlePhaseUpdate() {
-    if(turnProgress.value <= 87.5) {
-        turnProgress.value += 12.5;
-        // turnProgress.innerText = ... does this matter for accessibility?
-        updatePhase(turnProgress.value);
+    let totalWidth = Number( window.getComputedStyle(turnProgress).width.slice(0,-2) );  // chop off 'px'
+    let barStartPos = Number(window.getComputedStyle(progBar).marginLeft.slice(0,-2) );  // using slice()
+    let oneFU = totalWidth / 8
+    let ratio = barStartPos / totalWidth;
+
+    if( ratio <= 0.750 ) {
+        let newPercentage = (barStartPos + oneFU) / totalWidth * 100;
+        progBar.style.marginLeft = `${newPercentage}%`;
+        updatePhase(newPercentage);
         // @TODO: send event entering/leaving phase
         // clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phase: [whatever phase we're now in] } );
     } 
     else {                                // if value > 87.5 or equals 100 then proceed to opponent's turn 
-        turnProgress.value = 0;
+        progBar.style.marginLeft = "0";
         updatePhase(0);
         // clientSocket.emit("yourTurn", { ourDraftID: myDraftID, ourMatchID: myMatchID } );
         // playerName.innerText = myOppName;
@@ -398,15 +425,56 @@ function handlePhaseUpdate() {
         // @TODO: when to incr turn # depends on who goes first
         if(playerName.innerText == myName) {                                // if it's been "my turn"
             alert("It's now opponent's turn");
+            myTurn = false;
             playerName.innerText = myOppName;                               // it will now be their turn
             turnNum.innerText++;    // nice quick way instead of Number(string)++
         }
         else {                                                              // if it's been "their turn"
             alert("It's now your turn");
+            myTurn = true;
             playerName.innerText = myName;                                  // it will now be my turn
         }
     }
+
+    // if(turnProgress.value <= 87.5) {
+    //     turnProgress.value += 12.5;
+    //     // turnProgress.innerText = ... does this matter for accessibility?
+    //     updatePhase(turnProgress.value);
+    //     // @TODO: send event entering/leaving phase
+    //     // clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phase: [whatever phase we're now in] } );
+    // } 
+    // else {                                // if value > 87.5 or equals 100 then proceed to opponent's turn 
+    //     turnProgress.value = 0;
+    //     updatePhase(0);
+    //     // clientSocket.emit("yourTurn", { ourDraftID: myDraftID, ourMatchID: myMatchID } );
+    //     // playerName.innerText = myOppName;
+    //     // @TODO: disable buttons like Search Library for opponent's turn
+    //     // @TODO: when to incr turn # depends on who goes first
+    //     if(playerName.innerText == myName) {                                // if it's been "my turn"
+    //         alert("It's now opponent's turn");
+    //         playerName.innerText = myOppName;                               // it will now be their turn
+    //         turnNum.innerText++;    // nice quick way instead of Number(string)++
+    //     }
+    //     else {                                                              // if it's been "their turn"
+    //         alert("It's now your turn");
+    //         playerName.innerText = myName;                                  // it will now be my turn
+    //     }
+    // }
 }
+
+// HANDLER function for draw for turn
+const handleDraw = () => {
+    if (cardsInLibrary.length == 0) {
+        alert("0 cards left to draw — game lost");
+        return;
+    }
+    if (numCardsInHand > 7) {
+        alert("7 cards in hand is the max");
+        return;
+    }
+    addCardToHand( cardsInLibrary.pop() );
+    notifyOpponent("draws for the turn");
+};
 
 // HANDLER function for Tutor button click
 const handleSearchLib = () => {
@@ -530,6 +598,7 @@ keepBtn.onclick = () => {       // after deciding to keep...
 
 // SCRY button click (shows top card)
 scryBtn.addEventListener('click', () => {
+    scryImg.src = "";
     const topCard = cardsInLibrary[cardsInLibrary.length-1];    // get the top card (last card in array)
     scryImg.src = `images/${topCard}.jpeg`;                     // show image of top card
     scryImg.classList.add('rounded');
@@ -541,30 +610,10 @@ scryBtn.addEventListener('click', () => {
     });                                                         // Shift RIGHT (UNshift) = top to pos 0
 
 // UNTAP ALL button click
-untapBtn.addEventListener( 'click', () => {
-    let tappedCards = document.querySelectorAll('.tapped'); // querySelectorAll() WORKED!
-                                                            // Previous behavior with getElementsByClassName()
-    for( card of tappedCards) {                             // was a bit strange, requiring multiple clicks
-        card.classList.remove('tapped');                    // only every other tapped card would be untapped each time
-    }
-    notifyOpponent("untaps");
-    turnProgress.value = 12.5;
-    turnPhase.innerText = "Start turn";
-});
+untapBtn.addEventListener( 'click', handleUntapping);
 
 // DRAW 1 button click
-drawBtn.addEventListener( 'click', () => {
-    if (cardsInLibrary.length == 0) {
-        alert("0 cards left to draw — game lost");
-        return;
-    }
-    if (numCardsInHand > 6) {
-        alert("7 cards in hand is the max");
-        return;
-    }
-    addCardToHand( cardsInLibrary.pop() );
-    notifyOpponent("draws for the turn");
-});
+drawBtn.addEventListener( 'click', handleDraw);
 
 // "VIEW TOP 3 CARDS" button click
 view3Btn.addEventListener('click', handleViewTop3 );
@@ -648,13 +697,16 @@ oppLifePoints.addEventListener('click', () => {
 window.addEventListener( 'keydown', keyEvent => {
     if(keyEvent.key == "Alt") {
         altPressed = true;
-    }                                    
+    }  
+    if(altPressed == true )
+        if(keyEvent.code == 'KeyA' || keyEvent.code == 'KeyP') handlePhaseUpdate();                                 
 });
 window.addEventListener( 'keyup', keyEvent => {
     if(keyEvent.key == "Alt") {
         altPressed = false;
     }
 });
+
 
 // 2.
 // Adjust of quantity of MANA element passed in            
@@ -704,87 +756,87 @@ function clearChildImages( parentElem ) {
     while(parentElem.lastChild) parentElem.removeChild(parentElem.lastChild);
 }
 
-clientSocket.on("privateMsg", (data) => {     // socket ID & name OR opp ID & name
-    console.log("received message: \"" + data.msg + "\" from " + myOppName);
-    const nameElem = document.createElement('span');
-    const msgElem = document.createElement('span');       // Yessss! 2 Spans solves the issue!
+// clientSocket.on("privateMsg", (data) => {     // socket ID & name OR opp ID & name
+//     console.log("received message: \"" + data.msg + "\" from " + myOppName);
+//     const nameElem = document.createElement('span');
+//     const msgElem = document.createElement('span');       // Yessss! 2 Spans solves the issue!
 
-    nameElem.classList.add('opp-chat-name');
+//     nameElem.classList.add('opp-chat-name');
 
-    nameElem.innerText = `${myOppName}:`;         // @TODO: change once to opponent's name each match
-    msgElem.innerText =  ` ${data.msg}\n`;
+//     nameElem.innerText = `${myOppName}:`;         // @TODO: change once to opponent's name each match
+//     msgElem.innerText =  ` ${data.msg}\n`;
 
-    // post message to chat log
-    chatLog.appendChild(nameElem);
-    chatLog.appendChild(msgElem);
+//     // post message to chat log
+//     chatLog.appendChild(nameElem);
+//     chatLog.appendChild(msgElem);
     
-    chatLog.scrollTo(0,100000);
-});
+//     chatLog.scrollTo(0,100000);
+// });
 
-clientSocket.on("diceRolled", (data) => {       // opponent rolled the dice
-    // record their value
-    oppRollValue = data.rollValue
+// clientSocket.on("diceRolled", (data) => {       // opponent rolled the dice
+//     // record their value
+//     oppRollValue = data.rollValue
      
-    if(myRollValue) {                       // did I roll already? if so, 
-        if( myRollValue > oppRollValue) {           //compare and decide who begins the game
-            alert("You won the die roll. You go first");            // I go first
-        }
-        else if(oppRollValue > myRollValue) {       
-            alert("Opponent won the die roll. They go first");      // They go first
-        }
-        else {                                                      // Tie. Roll again
-            myRollValue = null;     // zero out previous roll!
-            alert("Tie - roll again");
-            // clientSocket.emit("rollAgain", { ourDraftID: myDraftID, ourMatchID: myMatchID } );
-            // roll again
-        }
-    }
-    // Else I didn't roll yet. But when I do, I prefer Dos Equis
-    // when I do, it will be sent to opponent
-});
+//     if(myRollValue) {                       // did I roll already? if so, 
+//         if( myRollValue > oppRollValue) {           //compare and decide who begins the game
+//             alert("You won the die roll. You go first");            // I go first
+//         }
+//         else if(oppRollValue > myRollValue) {       
+//             alert("Opponent won the die roll. They go first");      // They go first
+//         }
+//         else {                                                      // Tie. Roll again
+//             myRollValue = null;     // zero out previous roll!
+//             alert("Tie - roll again");
+//             // clientSocket.emit("rollAgain", { ourDraftID: myDraftID, ourMatchID: myMatchID } );
+//             // roll again
+//         }
+//     }
+//     // Else I didn't roll yet. But when I do, I prefer Dos Equis
+//     // But when I do, it will be sent to opponent
+// });
 
-clientSocket.on("rollAgain", () => {
-    myRollValue = null;
-});
+// clientSocket.on("rollAgain", () => {
+//     myRollValue = null;
+// });
 
-clientSocket.on("phaseUpdate", handlePhaseUpdate);
+// clientSocket.on("phaseUpdate", handlePhaseUpdate);
 
-clientSocket.on("cardPlayed", (data) => {       // Take area & card (#) and 
-    let oppCard = document.createElement('img');
-    oppCard.src = `images/${data.card}.jpeg`;
-    oppCard.classList.add('inverted');
+// clientSocket.on("cardPlayed", (data) => {       // Take area & card (#) and 
+//     let oppCard = document.createElement('img');
+//     oppCard.src = `images/${data.card}.jpeg`;
+//     oppCard.classList.add('inverted');
 
-    if(data.area === "lands") {
-        oppLands.appendChild(oppCard);          // add opponent's newly played card to our display
-    } else if(data.area === "nonlands") {
-        oppNonLands.appendChild(oppCard);
-    }
-});
+//     if(data.area === "lands") {
+//         oppLands.appendChild(oppCard);          // add opponent's newly played card to our display
+//     } else if(data.area === "nonlands") {
+//         oppNonLands.appendChild(oppCard);
+//     }
+// });
 
-clientSocket.on("top3Revealed", (data) => {
-    // use data.topThree    
-});
+// clientSocket.on("top3Revealed", (data) => {
+//     // use data.topThree    
+// });
 
-clientSocket.on("handRevealed", (data) => {          // data.hand is their array of cards in hand
-    console.log("Opponent's hand has cards " + data.hand);
+// clientSocket.on("handRevealed", (data) => {          // data.hand is their array of cards in hand
+//     console.log("Opponent's hand has cards " + data.hand);
 
-    for(let c = 0; c < data.hand.length; c++) {
-        let cImg = document.createElement('img');
-        cImg.setAttribute('src', `images/${data.hand[c]}.jpeg`);
-        cImg.classList.add('rounded-sm');
-        oppHand.appendChild(cImg);
-    }
-    document.getElementById('reveal-modal').showModal();
-});
+//     for(let c = 0; c < data.hand.length; c++) {
+//         let cImg = document.createElement('img');
+//         cImg.setAttribute('src', `images/${data.hand[c]}.jpeg`);
+//         cImg.classList.add('rounded-sm');
+//         oppHand.appendChild(cImg);
+//     }
+//     document.getElementById('reveal-modal').showModal();
+// });
 
-clientSocket.on("nextGame", () => {      
-    console.log("moving on to next game");
-    // empty all our zones
-    // reset life totals and stuff
-    // reload deck, shuffle
-    // GL HF begin game
-});
+// clientSocket.on("nextGame", () => {      
+//     console.log("moving on to next game");
+//     // empty all our zones
+//     // reset life totals and stuff
+//     // reload deck, shuffle
+//     // GL HF begin game
+// });
 
-clientSocket.on("matchDone", () => {          
-    //clientSocket.emit("leavesMatch", { ourDraftID: myDraftID, ourMatchID: myMatchID, msg: chatInput.value } ); 
-});
+// clientSocket.on("matchDone", () => {          
+//     //clientSocket.emit("leavesMatch", { ourDraftID: myDraftID, ourMatchID: myMatchID, msg: chatInput.value } ); 
+// });
