@@ -6,8 +6,9 @@ let cardsInLibrary = [806, 672, 744, 657, 782, 751, 623, 780, 610, 792,
                       765, 785, 754, 768, 804, 672, 613, 876, 876, 876, 
                       892, 892, 892, 892, 889, 889, 889, 889, 889, 889];
 
-const phaseNames = ["Start turn", "Untap", "Upkeep", "Draw", "1st Main", 
-                    "Combat", "2nd Main", "End of turn"];
+
+const phaseNames = ["Start turn", "Untap", "Upkeep", "Draw", "1st Main", "Combat", "2nd Main", "End of turn"];
+const phaseColors = ["#fcfe94", "#f8a969", "#9acd32", "#52b7e6", "#64e089", "#f96bb8", "#537aef", "#6f6597"];
 
 // Game play zones
 const hand = document.getElementById('hand');
@@ -24,12 +25,11 @@ const oppExileZone = document.getElementById('opp-exiles');
 const matchMin = $('#round-min');  // shows minutes remaining
 const matchSec = $('#round-sec');  // shows seconds
 const matchTimerDiv = $('#round-timer');    // holds them both
-// const oppName = document.getElementById('opp-name');
 
-const playerName = document.getElementById('player-name');          // <span>
+const activePlayerName = document.getElementById('player-name');          // <span>
 const turnNum = document.getElementById('turn-number');             // <span>
 const turnPhase = document.getElementById('turn-phase');            // <div>
-const turnProgress = document.getElementById('turn-progress');      // <progress>
+const progressDiv = document.getElementById('turn-progress');       // was <progress>, now <div>
 const progBar = document.getElementById('prog-bar');                // <div> inside <div>
 const myLifePoints = document.getElementById('my-lifepoints');      // <span>
 const oppLifePoints = document.getElementById('opp-lifepoints');    // <span>
@@ -64,8 +64,8 @@ const toBottomBtn = document.getElementById('unshift-btn');
 
 // Modal dialog to View top 3 cards with option to reorder or shuffle
 const view3Modal = document.getElementById('view3-modal');      // <dialog>
-const threeCardDiv = document.getElementById('three-cards');
-const shuffle2 = document.getElementById('shuffle-btn-2');
+const threeCardDiv = document.getElementById('three-cards');    // <div>
+const shuffle2 = document.getElementById('shuffle-btn-2');      // <button>
 const reorderBtn = document.getElementById('reorder-btn');      // @TODO: change to drag & drop
 // const keepAsIsBtn = document.getElementById('asis-btn');
 
@@ -73,8 +73,8 @@ const reorderBtn = document.getElementById('reorder-btn');      // @TODO: change
 const oppHand = document.getElementById('opp-hand');            // <div>
 
 // For modal to search library
-const tutorModal = document.getElementById('search-modal');
-const myLibrary = document.getElementById('my-library');
+const tutorModal = document.getElementById('search-modal');     // <dialog>
+const myLibrary = document.getElementById('my-library');        // <div>
 
 // Quantity elements for the 6 kinds of mana
 const colorless = document.getElementById('colorless-qty');     // <span>
@@ -83,23 +83,28 @@ const blue = document.getElementById('blue-qty');
 const black = document.getElementById('black-qty');
 const red = document.getElementById('red-qty');
 const green = document.getElementById('green-qty');
-// let colorlessQty = 0, whiteQty = 0, blueQty = 0, blackQty = 0, redQty = 0, greenQty = 0;
 
-let myTurn = false;
 let myRollValue;
 let oppRollValue;
+let iPlayFirst = false;
+let myTurn = false;
 let cardsInHand = [];
-let numCardsInHand = 0;
+let numCardsInHand = 0;         // @TODO: just use cardsInHand.length?
 let landsInPlay = [];
 let nonLandsInPlay = []
-let numCardsInPlay = 0;
+let numCardsInPlay = 0;         // @TODO: just use .length?
 let cardsInGY = [];
-let numCardsInGY = 0;
+let numCardsInGY = 0;           // @TODO: just use cardsInGY.length
 let cardsInExile = [];
-let numCardsInExile = 0;
+let numCardsInExile = 0;        // @TODO: just use cardsInGY.length
+let oppNumCardsInHand = 0;
 let myGyShown = true;
 let oppGyShown = true;
 let currentSelectedCard;
+// let oppLandsInPlay = [];
+// let oppNonLandsInPlay = [];
+// let oppCardsInGY = [];          
+// let oppCardsInExile = [];
 
 shuffleDeck();  // auto shuffle first
 //for(let c = 0; c < 7; c++ ) addCardToHand( cardsInLibrary.pop() );    // to automatically draw 7
@@ -140,32 +145,8 @@ function addCardToHand( card ) {
                 // tap card if it's a basic land // later we'll add non-basics and artifacts
                 // perhaps including how much many card produces when tapped within the card object
                 cardImage.classList.add('tapped');
-                const cardID = Number(cardImage.getAttribute('src').slice(7,10));
-                if( cardID > 896) {
-                    white.innerText = `${Number( white.innerText ) + 1}`;        // increase white mana
-                    white.style.color = "yellow";
-                    document.getElementById('w-symbol').classList.add('halo');
-                }                      
-                else if( cardID > 893) {
-                    blue.innerText = `${Number( blue.innerText ) + 1}`;          // increase blue mana
-                    blue.style.color = "rgb(0, 170, 255)";
-                    document.getElementById('u-symbol').classList.add('halo');
-                }                 
-                else if( cardID > 890) {
-                    red.innerText = `${Number( red.innerText ) + 1}`;           // increase red mana
-                    red.style.color = "red";
-                    document.getElementById('r-symbol').classList.add('halo');
-                }                 
-                else if( cardID > 887) {
-                    green.innerText = `${Number( green.innerText ) + 1}`;        // increase green mana
-                    green.style.color = "rgb(64, 255, 47)";
-                    document.getElementById('g-symbol').classList.add('halo');
-                }                 
-                else if( cardID > 874 && cardID < 878) {
-                    black.innerText = `${Number( black.innerText )+1}`;         // increase black mana
-                    black.style.color = "purple";
-                    document.getElementById('b-symbol').classList.add('halo');
-                } 
+                const cardNumber = Number(cardImage.getAttribute('src').slice(7,10));
+                addManaToPool( cardNumber );
             }
         }
     });
@@ -197,14 +178,15 @@ landsArea.addEventListener( 'drop', event => {
     //currentSelectedCard.style = "width: 72px; height: 100px;";
     let cardNum = currentSelectedCard.src.slice(7,10);
     let index = cardsInHand.indexOf( cardNum, 0);
-    cardsInHand.splice( index, 1 );            
+    cardsInHand.splice( index, 1 );       
+    document.cookie = `cardsinhand=${cardsInHand}`;     
     landsArea.appendChild(currentSelectedCard);
+    document.cookie = `landsinplay=${landsInPlay}`;
 
-    //clientSocket.emit("cardPlayed", { ourDraftID: myDraftID, ourMatchID: myMatchID, area: "lands", card: cardNum });
+    //clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "lands", cardNum: cardNum });
     
     numCardsInHand--;           // or just refer to cardsInHand.length
-    // landsInPlay.push(cardNum);
-    // refresh NL area
+    landsInPlay.push(cardNum);
     numCardsInPlay++;
     landsArea.style = "border: 2px solid yellowgreen";
 });
@@ -228,18 +210,16 @@ nonLandsArea.addEventListener( 'drop', event => {
     let cardNum = currentSelectedCard.src.slice(7,10);
     let index = cardsInHand.indexOf( cardNum, 0);
     cardsInHand.splice( index, 1 );
-
-    //clientSocket.emit("cardPlayed", { ourDraftID: myDraftID, ourMatchID: myMatchID, area: "nonlands", card: cardNum });
+    document.cookie = `cardsinhand=${cardsInHand}`;     
+    document.cookie = `nonlandsinplay=${nonLandsInPlay}`;
+    //clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "nonlands", cardNum: cardNum });
     
     numCardsInHand--;                   // or just refer to cardsInHand.length
-    // nonLandsInPlay.push(cardNum);
+    nonLandsInPlay.push(cardNum);
     // refresh NL area
     numCardsInPlay++;
     nonLandsArea.style = "border: 2px solid yellowgreen";
 });
-
-
-
 
 
 // Graveyard event listeners
@@ -255,10 +235,18 @@ graveyard.addEventListener( 'dragleave', (event) => {
 graveyard.addEventListener( 'drop', event => {
     currentSelectedCard.draggable = false;
     currentSelectedCard.classList.remove('scale-in-hand', 'scale-on-battlefield');
+    if(currentSelectedCard.parent == hand) {
+        // clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "graveyard", cardNum: cardNum });
+        numCardsInHand--;           
+        document.cookie = `cardsinhand=${cardsInHand}`;     
+    } else if(currentSelectedCard.parent == nonLandsArea) {
+        // clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "graveyard", cardNum: cardNum });
+        numCardsInPlay--;
+        document.cookie = `nonlands=${nonLandsInPlay}`;
+    }
     graveyard.appendChild(currentSelectedCard);
-    numCardsInHand--;           // TODO: UPDATE ... different depending on source/spell
     numCardsInGY++;
-    //graveyard.style = "";
+    document.cookie = `cardsinyard=${cardsInGY}`;
 });
 
 // Exile zone event listeners
@@ -274,54 +262,39 @@ exileZone.addEventListener( 'dragleave', (event) => {
 exileZone.addEventListener( 'drop', event => {
     currentSelectedCard.draggable = false;
     currentSelectedCard.classList.remove('scale-in-hand', 'scale-on-battlefield');
+    // @TODO: adjust non-lands
     exileZone.appendChild(currentSelectedCard);
+    // clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "exile", cardNum: cardNum });
     numCardsInPlay--;           // TODO: UPDATE ... depends on source of removal
     numCardsInExile++;
-    //exileZone.style = "";
+    document.cookie = `cardsinexile=${cardsInExile}`;
 });
+
+//
+const handleToggleGraveyardExile = (gyDiv, exDiv, evt) => {
+    if( myGyShown ) {
+        gyDiv.style.display = "none";       // hide GY
+        exDiv.style.display = "flex";       // show Exiled cards
+        myGyShown = false;
+        evt.currentTarget.textContent = "Show Graveyard";
+    } else {
+        exDiv.style.display = "none";       // hide Exiled cards
+        gyDiv.style.display = "flex";       // show GY
+        myGyShown = true;
+        evt.currentTarget.textContent = "Show Exiles";
+    }
+};
 
 // Button to Toggle display of MY Graveyard and Exile zones
-document.getElementById('toggle-gy-exile').addEventListener( 'click', (evt) => {
-    if( myGyShown ) {
-        // hide GY
-        graveyard.style.display = "none";
-        // show Exiled cards
-        exileZone.style.display = "flex";
-        myGyShown = false;
-        evt.currentTarget.innerText = "Show Graveyard";
-    } else {
-        // hide Exiled cards
-        exileZone.style.display = "none";
-        // show GY
-        graveyard.style.display = "flex";
-        myGyShown = true;
-        evt.currentTarget.innerText = "Show Exiles";
-    }
-});         // @TODO:  ^ CONSOLIDATE? v
+document.getElementById('toggle-gy-exile').addEventListener( 'click', event => handleToggleGraveyardExile(graveyard, exileZone, event) );
 
 // Button to Toggle display of OPPONENT'S Graveyard and Exile zones
-document.getElementById('toggle-opp-gy-exile').addEventListener( 'click', (evt) => {
-    if( oppGyShown ) {
-        // hide GY
-        oppGraveyard.style.display = "none";
-        // show Exiled cards
-        oppExileZone.style.display = "flex";
-        oppGyShown = false;
-        evt.currentTarget.innerText = "Show GY";
-    } else {
-        // hide Exiled cards
-        oppExileZone.style.display = "none";
-        // show GY
-        oppGraveyard.style.display = "flex";
-        oppGyShown = true;
-        evt.currentTarget.innerText = "Show Exiles";
-    }
-});
+document.getElementById('toggle-opp-gy-exile').addEventListener( 'click', event => handleToggleGraveyardExile(oppGraveyard, oppExileZone, event) );
 
-// oppName.innerText = `[opp name]`;     // USE:  oppName.innerText = `${myOpponentID}-${myOppName}`;
+// oppName.textContent = `[opp name]`;     // USE:  oppName.textContent = `${myOpponentID}-${myOppName}`;
 
 // CHAT FORM/LOG
-chatForm.addEventListener('submit', (evt) => {
+chatForm.addEventListener('submit', (evt) => {      // @TODO:  ENSURE default is ACTUALLY prevented!
     evt.preventDefault();
     if(chatInput.value) {
         const nameElem = document.createElement('span');
@@ -329,8 +302,8 @@ chatForm.addEventListener('submit', (evt) => {
 
         nameElem.classList.add('my-chat-name');                // styling for username
 
-        nameElem.innerText = `username:`;   // USE: nameElem.innerText = `${myName}:`;               
-        msgElem.innerText =  ` ${chatInput.value}\n`;
+        nameElem.textContent = `username:`;   // USE: nameElem.textContent = `${myName}:`;               
+        msgElem.innerText =  ` ${chatInput.value}\n`;           // must use .innerText to get \n characters
 
         //clientSocket.emit("privateMsg", { ourDraftID: myDraftID, ourMatchID: myMatchID, msg: chatInput.value } );
 
@@ -373,7 +346,8 @@ function mulligan(numCardsHad) {
     shuffleDeck();
     for(let i = 1; i < numCardsHad; i++) addCardToHand( cardsInLibrary.pop() );  // start with i = 1 instead of checking i < num - 1
 }
-
+                        /////////////////// HANDLERS ////////////////////
+                                    
 // HANDLER function for untap step
 const handleUntapping = () => {
     let tappedCards = document.querySelectorAll('.tapped'); // querySelectorAll() WORKED!
@@ -381,30 +355,33 @@ const handleUntapping = () => {
     for( card of tappedCards) {                             // was a bit strange, requiring multiple clicks
         card.classList.remove('tapped');                    // only every other tapped card would be untapped each time
     }
-    notifyOpponent("untaps");               // @TODO: IMPORTANT - create another "tapped" class so we don't untap opponents cards
-    // turnProgress.value = 12.5;
+    notifyOpponent("untaps");     
+    // clientSocket.emit("justUntapped", { ourDraftID: myDraftID, ourMatchID: myMatchID } );        
 };
 
 // Phase update helper function
 function updatePhase(newValue) {            // proceeds to the next phase of the turn
     let index = (newValue / 12.5);
     let currentPhase = phaseNames[index];
-    turnPhase.innerText = currentPhase;
+    turnPhase.textContent = currentPhase;
+    document.cookie = `turnphase=${currentPhase}`;
 
     if(myTurn) {
         if(currentPhase == "Untap") handleUntapping();
         else if(currentPhase == "Draw") handleDraw();
+        emptyManaPool();
     }
-    let red = randomInt(155) + 100; let green = randomInt(155) + 100; let blue = randomInt(155) + 100;
-    progBar.style.backgroundColor = `rgb(${red}, ${green}, ${blue})`;
-    turnPhase.style.color = `rgb(${red}, ${green}, ${blue})`;
-    console.log(`rgb(${red}, ${green}, ${blue})`);
+    // let red = randomInt(155) + 100; let green = randomInt(155) + 100; let blue = randomInt(155) + 100;
+    // turnPhase.style.color = `rgb(${red}, ${green}, ${blue})`;
+    // console.log(`rgb(${red}, ${green}, ${blue})`);
+    progBar.style.backgroundColor = phaseColors[index];
+    turnPhase.style.color = phaseColors[index];
 }
 
         let myName = "my name"; let myOppName = "opp's name";
 // HANDLER function for phase update click/event
-function handlePhaseUpdate() {
-    let totalWidth = Number( window.getComputedStyle(turnProgress).width.slice(0,-2) );  // chop off 'px'
+function handlePhaseUpdate() {  // handle phases of "my turn"
+    let totalWidth = Number( window.getComputedStyle(progressDiv).width.slice(0,-2) );  // chop off 'px'
     let barStartPos = Number(window.getComputedStyle(progBar).marginLeft.slice(0,-2) );  // using slice()
     let oneFU = totalWidth / 8
     let ratio = barStartPos / totalWidth;
@@ -413,67 +390,43 @@ function handlePhaseUpdate() {
         let newPercentage = (barStartPos + oneFU) / totalWidth * 100;
         progBar.style.marginLeft = `${newPercentage}%`;
         updatePhase(newPercentage);
-        // @TODO: send event entering/leaving phase
-        // clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phase: [whatever phase we're now in] } );
+        // send event entering/leaving phase
+        // clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phaseValue: newPercentage } );
     } 
     else {                                // if value > 87.5 or equals 100 then proceed to opponent's turn 
+        nextPhaseBtn.setAttribute('disabled', true);
         progBar.style.marginLeft = "0";
         updatePhase(0);
+        // clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phaseValue: 0 } );
         // clientSocket.emit("yourTurn", { ourDraftID: myDraftID, ourMatchID: myMatchID } );
-        // playerName.innerText = myOppName;
+        // activePlayerName.textContent = myOppName;
         // @TODO: disable buttons like Search Library for opponent's turn
-        // @TODO: when to incr turn # depends on who goes first
-        if(playerName.innerText == myName) {                                // if it's been "my turn"
-            alert("It's now opponent's turn");
-            myTurn = false;
-            playerName.innerText = myOppName;                               // it will now be their turn
-            turnNum.innerText++;    // nice quick way instead of Number(string)++
-        }
-        else {                                                              // if it's been "their turn"
-            alert("It's now your turn");
-            myTurn = true;
-            playerName.innerText = myName;                                  // it will now be my turn
-        }
+        myTurn = false;
+        document.cookie = "myturn=false";  
+        activePlayerName.textContent = myOppName;                             
+        alert("It's now opponent's turn");      // it will now be their turn
+        // then if opponent went first increment turn #
+        if(!iPlayFirst) {
+            turnNum.textContent++;    // works! instead of Number(string)++     
+            document.cookie = `turn=${turnNum.textContent}`;                // SAVE GAME STATE
+        } 
     }
-
-    // if(turnProgress.value <= 87.5) {
-    //     turnProgress.value += 12.5;
-    //     // turnProgress.innerText = ... does this matter for accessibility?
-    //     updatePhase(turnProgress.value);
-    //     // @TODO: send event entering/leaving phase
-    //     // clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phase: [whatever phase we're now in] } );
-    // } 
-    // else {                                // if value > 87.5 or equals 100 then proceed to opponent's turn 
-    //     turnProgress.value = 0;
-    //     updatePhase(0);
-    //     // clientSocket.emit("yourTurn", { ourDraftID: myDraftID, ourMatchID: myMatchID } );
-    //     // playerName.innerText = myOppName;
-    //     // @TODO: disable buttons like Search Library for opponent's turn
-    //     // @TODO: when to incr turn # depends on who goes first
-    //     if(playerName.innerText == myName) {                                // if it's been "my turn"
-    //         alert("It's now opponent's turn");
-    //         playerName.innerText = myOppName;                               // it will now be their turn
-    //         turnNum.innerText++;    // nice quick way instead of Number(string)++
-    //     }
-    //     else {                                                              // if it's been "their turn"
-    //         alert("It's now your turn");
-    //         playerName.innerText = myName;                                  // it will now be my turn
-    //     }
-    // }
 }
 
-// HANDLER function for draw for turn
+// HANDLER function to draw for turn
 const handleDraw = () => {
     if (cardsInLibrary.length == 0) {
         alert("0 cards left to draw — game lost");
+        // clientSocket.emit("gameDone", { draftID: myDraftID, playerID: myPlayerID, oppID: myOpponentID, gameResult: "resigns"} );
         return;
     }
     if (numCardsInHand > 7) {
-        alert("7 cards in hand is the max");
+        alert("8 cards in hand is the max for now");
         return;
     }
     addCardToHand( cardsInLibrary.pop() );
     notifyOpponent("draws for the turn");
+    //clientSocket.emit("cardDrawn", { draftID: myDraftID, playerID: myPlayerID } );
 };
 
 // HANDLER function for Tutor button click
@@ -522,7 +475,7 @@ const handleViewTop3 = () => {
     let selectedCard;
     for(let i = cardsInLibrary.length-3; i<cardsInLibrary.length; i++) {
         if(i < 0) continue;                                             // if undefined, go to next index
-        let img1 = new Image(); // quicker than document.createElement('img');
+        let img1 = new Image();                                 // quicker than document.createElement('img') ?
         img1.setAttribute('src', `images/${cardsInLibrary[i]}.jpeg`);
         img1.classList.add('rounded');
         img1.setAttribute('draggable', true);                           // does this work?
@@ -557,6 +510,17 @@ const handleViewTop3 = () => {
     });
 };
 
+const fadeOutPlay = () => {
+    document.getElementById('black-curtain').style.zIndex = 20;
+    document.getElementById('black-curtain').style.opacity = "1";
+}
+const fadeInPlay = () => {
+    window.setTimeout( () => {
+        document.getElementById('black-curtain').style.opacity = "0";
+        document.getElementById('black-curtain').style.zIndex = -1;
+    }, 5000);
+}
+
 ////////////////////// BUTTON CLICK LISTENERS ///////////////////////
 
 // SHUFFLE deck
@@ -580,6 +544,7 @@ draw7Btn.addEventListener( 'click', () => {
     if ( cardsInLibrary.length >= 7 && numCardsInHand == 0) {
         for(let c = 0; c < 7; c++ ) addCardToHand( cardsInLibrary.pop() );
     }
+    //clientSocket.emit("cardsDrawn", { draftID: myDraftID, playerID: myPlayerID, numDrawn: 7 } );
 });
 
 // MULLIGAN button click
@@ -621,7 +586,7 @@ view3Btn.addEventListener('click', handleViewTop3 );
 // Reveal top 3 cards to opponent (Natural Selection)
 reveal3Btn.onclick = () => {
     // send top 3 cards to opponent for viewing
-    let myTop3;
+    let myTop3 = [];
     for(let i = cardsInLibrary.length-3; i<cardsInLibrary.length; i++) {
         if(i < 0) continue;
         myTop3.push( cardsInLibrary[i] );
@@ -647,12 +612,13 @@ tutorBtn.addEventListener( 'click', handleSearchLib );
 resignBtn.addEventListener('click', () => {
     const affirmative = confirm("Are you sure you want to resign?");
     if (affirmative) {
-        alert("Resigning this game...");
+        fadeOutPlay();
+        // alert("Resigning this game...");
         //clientSocket.emit("gameDone", { draftID: myDraftID, playerID: myPlayerID, oppID: myOpponentID, gameResult: "resigns"} );
-        // update client's game info, status
+        // update client's game info, 
+        fadeInPlay();
     }  
 });
-
 
 // Mana quantity adjustments
 document.getElementById('c-symbol').addEventListener( 'click', (evt) => {
@@ -712,8 +678,8 @@ window.addEventListener( 'keyup', keyEvent => {
 // Adjust of quantity of MANA element passed in            
 function adjustQuantity(textElem, iconLetter) {
     // get current quantity
-    let prevQty = Number( textElem.innerText );
-    let currentQty = Number( textElem.innerText );
+    let prevQty = Number( textElem.textContent );
+    let currentQty = Number( textElem.textContent );
        
     // if Alt key is down...
     if(altPressed) {
@@ -723,11 +689,11 @@ function adjustQuantity(textElem, iconLetter) {
         currentQty++;       // otherwise, increment quantity
     }
     // render updated value
-    textElem.innerText = `${currentQty}`;
+    textElem.textContent = `${currentQty}`;
 
     if(iconLetter) {
         // remove or add halo
-        if(textElem.innerText == "0") {
+        if(textElem.textContent == "0") {
             document.getElementById(`${iconLetter}-symbol`).classList.remove('halo'); // needed otherwise JS doesn't think it has a classList
             textElem.style.color = "lightgray";
         }
@@ -736,6 +702,92 @@ function adjustQuantity(textElem, iconLetter) {
             textElem.style.color = getColor(iconLetter);
         }   
     }
+}
+
+function addManaToPool( cardID ) {
+    if( cardID > 896) {                                             // BASIC LANDS
+        white.textContent = `${Number( white.textContent ) + 1}`;        // increase white mana
+        white.style.color = "yellow";
+        document.getElementById('w-symbol').classList.add('halo');
+    }                      
+    else if( cardID > 893) {
+        blue.textContent = `${Number( blue.textContent ) + 1}`;          // increase blue mana
+        blue.style.color = "rgb(0, 170, 255)";
+        document.getElementById('u-symbol').classList.add('halo');
+    }                 
+    else if( cardID > 890) {
+        red.textContent = `${Number( red.textContent ) + 1}`;           // increase red mana
+        red.style.color = "red";
+        document.getElementById('r-symbol').classList.add('halo');
+    }                 
+    else if( cardID > 887) {
+        green.textContent = `${Number( green.textContent ) + 1}`;        // increase green mana
+        green.style.color = "rgb(64, 255, 47)";
+        document.getElementById('g-symbol').classList.add('halo');
+    }                 
+    else if( cardID > 874 && cardID < 878) {
+        black.textContent = `${Number( black.textContent )+1}`;         // increase black mana
+        black.style.color = "purple";
+        document.getElementById('b-symbol').classList.add('halo');
+    } 
+    else if( cardID < 638) {        // ARTIFACT MANA
+        switch(cardID) {
+            case 599:
+            case 627:
+                colorless.textContent++;  colorless.textContent++;  colorless.textContent++;   
+                // basalt monolith or mana vault - increase colorless mana
+                colorless.style.color = "white";
+                document.getElementById('c-symbol').classList.add('halo');
+                break;
+            case 600:
+                // lotus - ask player what color they want
+                break;
+            case 629:
+                green.textContent++;        // mox emerald - increase green mana
+                green.style.color = "rgb(64, 255, 47)";
+                document.getElementById('g-symbol').classList.add('halo');
+                break;
+            case 630:
+                black.textContent++;         // jet - increase black mana
+                black.style.color = "purple";
+                document.getElementById('b-symbol').classList.add('halo');
+                break;
+            case 631:
+                white.textContent++;        // pearl - increase white mana
+                white.style.color = "yellow";
+                document.getElementById('w-symbol').classList.add('halo');
+                break;
+            case 632:
+                red.textContent++;           // ruby - increase red mana
+                red.style.color = "red";
+                document.getElementById('r-symbol').classList.add('halo');
+                break;
+            case 633:
+                blue.textContent++;          // sapphire - increase blue mana
+                blue.style.color = "rgb(0, 170, 255)";
+                document.getElementById('u-symbol').classList.add('halo');
+                break;
+            case 637:
+                colorless.textContent += 2;        // basalt monolith or mana vault - increase colorless mana
+                //colorless.style.color = "white";
+                document.getElementById('c-symbol').classList.add('halo');
+        }
+    }
+}
+
+function resetQuantity(textElem, iconLetter) {
+    textElem.textContent = "0";
+    textElem.style.color = "lightgray";
+    document.getElementById(`${iconLetter}-symbol`).classList.remove('halo'); // needed otherwise JS doesn't think it has a classList
+}
+
+function emptyManaPool() {
+    resetQuantity(white, 'w');
+    resetQuantity(blue, 'u');
+    resetQuantity(black, 'b');
+    resetQuantity(red, 'r');
+    resetQuantity(green, 'g');
+    resetQuantity(colorless, 'c');
 }
 
 function randomInt( max ) {
@@ -763,8 +815,8 @@ function clearChildImages( parentElem ) {
 
 //     nameElem.classList.add('opp-chat-name');
 
-//     nameElem.innerText = `${myOppName}:`;         // @TODO: change once to opponent's name each match
-//     msgElem.innerText =  ` ${data.msg}\n`;
+//     nameElem.textContent = `${myOppName}:`;         // @TODO: change once to opponent's name each match
+//     msgElem.textContent =  ` ${data.msg}\n`;
 
 //     // post message to chat log
 //     chatLog.appendChild(nameElem);
@@ -779,9 +831,11 @@ function clearChildImages( parentElem ) {
      
 //     if(myRollValue) {                       // did I roll already? if so, 
 //         if( myRollValue > oppRollValue) {           //compare and decide who begins the game
+//             iPlayFirst = true;
 //             alert("You won the die roll. You go first");            // I go first
 //         }
-//         else if(oppRollValue > myRollValue) {       
+//         else if(oppRollValue > myRollValue) {     
+//             iPlayFirst = false;  
 //             alert("Opponent won the die roll. They go first");      // They go first
 //         }
 //         else {                                                      // Tie. Roll again
@@ -792,29 +846,67 @@ function clearChildImages( parentElem ) {
 //         }
 //     }
 //     // Else I didn't roll yet. But when I do, I prefer Dos Equis
-//     // But when I do, it will be sent to opponent
+//     // I mean...But when I do, it will be sent to opponent
 // });
 
 // clientSocket.on("rollAgain", () => {
 //     myRollValue = null;
+//     alert("Tie - roll again");
 // });
 
-// clientSocket.on("phaseUpdate", handlePhaseUpdate);
+// clientSocket.on("cardsDrawn", (data) => {
+//    oppNumCardsInHand += data.numDrawn;
+//    // @TODO: then update visual
+// });
 
-// clientSocket.on("cardPlayed", (data) => {       // Take area & card (#) and 
+// clientSocket.on("phaseUpdate", (data) => {   // data.phaseValue
+//     updatePhase(data.phaseValue);
+// });
+
+// clientSocket.on("cardMoved", (data) => {       // Take area(s) & card (#) and append new image to opp's battlefield
 //     let oppCard = document.createElement('img');
-//     oppCard.src = `images/${data.card}.jpeg`;
+//     oppCard.src = `images/${data.cardNum}.jpeg`;
 //     oppCard.classList.add('inverted');
 
-//     if(data.area === "lands") {
-//         oppLands.appendChild(oppCard);          // add opponent's newly played card to our display
-//     } else if(data.area === "nonlands") {
-//         oppNonLands.appendChild(oppCard);
+//     if(data.srcArea === "hand") {
+//         oppNumCardsInHand--;
+//         if(data.destArea === "lands") {
+//             oppLands.appendChild(oppCard);          // add opponent's newly played card to our display
+//         } else if(data.destArea === "nonlands") {
+//             oppNonLands.appendChild(oppCard);
+//         } else if(data.destArea === "graveyard") {
+//             oppGraveyard.appendChild(oppCard);
+//         } 
+//     } else if(data.srcArea !== "nonlands" && data.destArea === "graveyard") {
+//         // move card from oppNonLands to oppGraveyard
 //     }
 // });
 
+// clientSocket.on("yourTurn", () => {
+//     myTurn = true;
+//     document.cookie = "myturn=true";
+//     activePlayerName.textContent = myName;
+//     if(iPlayFirst) turnNum.textContent++;
+//     alert("It's now your turn");
+//     nextPhaseBtn.setAttribute('disabled', false);
+// });
+
+// clientSocket.on("justUntapped", () => {
+//     // untap opponent's permanents in my view
+//     let tappedCards = document.querySelectorAll('.opp-tapped'); 
+                                                            
+//     for( card of tappedCards) {                             
+//         card.classList.replace('.opp-tapped', '.inverted');              
+//     }
+// });
+
+// clientSocket.on("cardDrawn", () => {
+//    oppNumCardsInHand++;
+//    // @TODO: then update visual
+// });
+
 // clientSocket.on("top3Revealed", (data) => {
-//     // use data.topThree    
+//     // use data.topThree    and call up viewtop3 modal
 // });
 
 // clientSocket.on("handRevealed", (data) => {          // data.hand is their array of cards in hand
