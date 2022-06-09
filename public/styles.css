@@ -5,14 +5,27 @@ body {
 
 /* Index.html  aka Join Screen  */
 #join {
-    margin-left: 25px;
-    background: white;    /* already white, just for clarity */
+    width: 100vw;
+    height: 100vh;
+    position: fixed;
+    padding-left: 25px;
+    background: white;  
+    z-index: 0;
+    opacity: 1;
+    color: black;  
+    /* transition-property: opacity;
+    transition-duration: 3s;
+    transition-timing-function: ease-out; */
 }
+    h1 {
+        margin-top: 0;
+        padding-top: 20px;
+    }
     #connected {
-        color: green;
+        color: rgb(47, 151, 47);
     }
     #needed {
-        color: darkred;
+        color: rgb(192, 46, 46);
     }
 
     .num-users {
@@ -31,9 +44,22 @@ body {
     #card-frame {
         width: 223px;
         height: 310px;
-        border-radius: 8px;
+        border-radius: 10px;
         background: black;
     }
+
+#black-curtain {
+    width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    background-color: #151515;
+    position: fixed;
+    z-index: -1;
+    opacity: 0;
+    transition-property: z-index, opacity;
+    transition-duration: 2s, 2s;
+    transition-timing-function: ease-in-out;
+}
 
 /* Open / Draft screens */
 #open, #draft {
@@ -140,15 +166,14 @@ body {
             font-size: 20px;
         }
 
-#cards-seen {
-    width: 1272px;    /* or 1272px as below */
+#cards-seen {                                       /* @TODO:  FIX lack of overlap for cards 3+ in each row */
+    width: 1272px;    /* or 1272px as below */      /*         Look into flex wrap rows */
     height: 442px;
     background-color: black;
     display: grid;                      
     /* justify-content: flex-start;        
     flex-wrap: wrap; */
     grid-template-columns: 159px 159px 159px 159px 159px 159px 159px 159px;
-    /* gap: -13px; */
     grid-auto-rows: minmax( 221px, auto );
 }
     .backing {
@@ -170,7 +195,7 @@ body {
     #cards-seen :first-child {
         margin-left: 0px;
     }
-    #cards-seen :nth-child(9) {
+    #cards-seen :nth-child(9) {         /* @TODO:  update this  */
         margin-left: 0px;
     }
 
@@ -223,6 +248,25 @@ body {
             border-bottom-color: tomato;
             border-left-color: firebrick;
         }
+        
+
+        #choose-basics {
+            width: 1000px;
+            height: 221px;
+            display: flex;
+            justify-content: space-between;
+        }
+            .basic-land {
+                width: 159px;
+                height: 221px;
+            }
+
+        #land-quantities {
+            width: 864px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
         .build-btn {
             background: green;
             border-top: 3px solid rgb(18, 177, 18);
@@ -241,21 +285,13 @@ body {
             border-left: 3px solid rgb(20, 89, 20);
         }
 
-        #choose-basics {
-            width: 1000px;
-            height: 221px;
-            display: flex;
-            justify-content: space-between;
+        #waiting {
+            font-size: 20px;
+            color: whitesmoke;
         }
-            .basic-land {
-                width: 159px;
-                height: 221px;
-            }
-
-        #land-quantities {
-            width: 864px;
-            display: flex;
-            justify-content: space-between;
+        #num-unfinished {
+            font-size: 26px;
+            font-weight: bold;
         }
 
 /* PLAY */
@@ -265,7 +301,7 @@ body {
     display: flex;
 }
 #play-inner > * {
-    background: #1E1E1E;
+    background: #151515;
     color: lightgray;
 }
 
@@ -281,7 +317,7 @@ body {
         display: flex;
     }
         #opp-gy-exile {
-            border-bottom: 2px solid #555;
+            border-bottom: 2px solid #333;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -290,7 +326,7 @@ body {
                 width: 150px; 
                 height: 207px;
                 padding: 5px;
-                background: #333;
+                background: #1e1e1e;
                 /* toggle flex */
                 flex-direction: column;
                 justify-content: flex-start;
@@ -311,18 +347,56 @@ body {
         }
             #opp-lands {
                 height: 110px;
+                padding: 5px;
+                display: flex;  
+                justify-content: center;
+            }
+            #opp-lands > img {
+                width: 72px; 
+                height: 100px;
+                margin-right: 15px;
+                border-radius: 3px; 
+                transform: rotate(180deg);
             }
             
             #opp-non-lands {
                 height: 135px;
+                padding: 5px;
                 border-top: 1px dashed #333;
+                display: flex; 
+                justify-content: center
+            }
+            #opp-non-lands > img {
+                width: 90px; 
+                height: 125px;
+                margin-right: 18px;
+                border-radius: 4px;
+                transform: rotate(180deg);
+            }
+
+            /* .inverted {
+                transform: rotate(180deg);
+            } */
+
+            .opp-tapped {
+                transform: rotate(90deg);
             }
 
             #turn-progress {
                 width: 100%;
-                height: 7px;
+                height: 5px;
                 margin-bottom: -2px;
+                /* border: 1px solid lightgray;
+                border-radius: 2px; */
             }
+            #prog-bar {
+                height: 5px;
+                width: 12.5%;
+                border-radius: 2px;
+                background-color: #fcfe94;
+                margin-left: 0;
+            }
+                /* how to target the actual progress bar? */
 
     #my-playarea {
         width: calc(100vw - 220px);
@@ -367,6 +441,10 @@ body {
                 margin-right: 15px;
                 border-radius: 3px;
             }
+            
+            .tapped {
+                transform: rotate(90deg);
+            }
 
             #my-mana {
                 width: 60px; 
@@ -391,7 +469,7 @@ body {
                     }
                     .symbol {
                         border-radius: 50%;
-                        
+                        cursor: pointer;
                     }
                     .halo {
                         box-shadow: 0 0 15px rgb(255, 240, 154);
@@ -422,6 +500,7 @@ body {
 
         .scale-on-battlefield:hover {
             transform: scale(1.8, 1.8) translate(20px, 0);
+            z-index: 16;
         }
         .scale-on-manafield:hover {
             transform: scale(1.4, 1.4) translate(10px, 0);
@@ -467,7 +546,7 @@ body {
             margin-bottom: 3px;
             border: 2px solid #555;
             padding: 5px;
-            overflow-wrap: break-word;
+            /* overflow-wrap: break-word; */
             overflow-x: hidden;
             overflow-y: auto;
             
@@ -493,11 +572,11 @@ body {
     #my-graveyard, #my-exiles {
         width: 159px;
         height: 221px;
-        border: 2px solid #777;
-        border-right-color: #404040;
-        border-bottom-color: #404040;
+        border: 3px solid #404040;
+        border-right-color: #777;
+        border-bottom-color: #777;
         padding: 5px 5px;
-        background: #292929;
+        background-color: #1e1e1e;
         /* toggle flex */
         flex-direction: column;
         justify-content: flex-start;
@@ -518,19 +597,24 @@ body {
         margin-top: 0px;
     }
 
-.tapped {
-    transform: rotate(90deg);
+.btn-md {
+    height: 30px;
+    border-radius: 7px;
+    padding: 0px 10px;
+    font-size: 14px;
+}
+
+.btn-sm {
+    border-radius: 5px;
+    font-size: 12px;
 }
 
 .action-btn {
-    border: 3px solid rgb(32, 178, 122);
-    background-color: rgb(25, 118, 79);
-    border-radius: 5px;
-    font-size: 12px;
+    border: 2px solid rgb(33, 161, 108);
+    background-color: rgb(28, 131, 88);
     color: white;
 }
 .action-btn:active {
-    
     background-color: whitesmoke;
     color: black
 }
@@ -566,7 +650,7 @@ body {
 }
     #three-cards {
         display: flex;
-        justify-content: flex-start;
+        justify-content: space-between;
     }
     /* #three-cards > img {
         
@@ -646,10 +730,16 @@ body {
     background: transparent; /* make scrollbar transparent */
 }
 
+.disable-scrollbars {
+    scrollbar-width: none;
+}
+
 .test {
     background: hotpink;
-    color: yellowgreen;
-
+    color: #9acd32;
+    
+    /* color: #eed969 */
+    /* background-color: rgb(111, 240, 253) */
     transform: translate(50px, 50px) rotate(90deg);
 }
 

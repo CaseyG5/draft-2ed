@@ -1,40 +1,55 @@
-
 var clientSocket = io();
 let myName = "";
+let myUUID = "";
 let myPlayerID = 0;
 let myDraftID = 0;
+let myDeck = [];
 let myMatchID = "";
 let myOpponentID = 0;
 let myOppName = "";
 let myTimer;
 let myPack = [];
-let allCardsKept = [];
-
-import("./timer.mjs").then( result => {
-    myTimer = new result.default(30,0);
-}).then(
-    () => {
-    myTimer.setDisplayFunc( updateDraftTime );
-});
+let allCardsKept = [];          
 
 // Dynamic HTML elements for sign-up page
-const userCount = document.getElementById('connected');   // <span>
-const usersNeeded = document.getElementById('needed');    // <span>
+const userCount = document.getElementById('connected');         // <span>
+const usersNeeded = document.getElementById('needed');          // <span>
 
 const nameField = document.getElementById('player-name');       // <input>
 const joinBtn = document.getElementById('join-btn');            // <button>
 const playerList = document.getElementById('player-list');      // <ol>
 
+const exampleCard = document.getElementById('example-card');
 const cardInput = document.getElementById('card-num');          // <input>
 const searchBtn = document.getElementById('search-btn');        // <button>
-const cardFrame = document.getElementById('card-frame');        // <div> holding <img>
+// const cardFrame = document.getElementById('card-frame');        // <div> holding <img>
 const cardInfo = document.getElementById('card-info');          // <div>
+const blackCurtain = document.getElementById('black-curtain');
 
 // HTML elements for timer
 const draftTimerDiv = $('#time-left');
 const draftMin = $('#minutes');
 const draftSec = $('#seconds');
 
+exampleCard.style.borderRadius = "10px";
+document.getElementById('surprise-btn').addEventListener('click', () => {
+    rand = Math.floor(Math.random() * 302) + 598;   // random # betw 0 and 301, then add 598
+    exampleCard.src = `images/${rand}.jpeg`;        // to get a # between 598 and 899 (incl)
+    clientSocket.emit( 'cardSearchRequest', {cardNum: `${rand}` } );
+});
+
+// Public import
+import("./timer.mjs").then( result => {
+    myTimer = new result.default(30,0);
+}).then(
+    () => {
+    myTimer.setDisplayFunc( pickTimer(draftTimerDiv, draftMin, draftSec) );
+});
+
+// Import via server request
+// import("./js.cookie.mjs").then( result => {
+//     console.log("JS-Cookie module loaded");
+// });
 
 joinBtn.addEventListener('click', () => {
     if(nameField.value) clientSocket.emit('playerJoinRequest', {name: nameField.value} );
@@ -46,18 +61,32 @@ searchBtn.addEventListener('click', () => {
     }
 });
 
-// CLIENT-side socket event listeners
-
+        // @TODO: fix bug with name on sign-up sheet after user reconnected
+        // and then can enter in ANOTHER name for the SAME person (check cookies for values of "joined" and "name")
+        // if values are present then disable join button?  or...
+// CLIENT-side socket event listeners                                            
 // Server has added the requesting player to the "sign-up sheet"
-clientSocket.on('playerJoinOK', (data) => {         // { draftNum, playerNum }
+clientSocket.on('playerJoinOK', (data) => {                     // { draftNum, playerNum }
     joinBtn.hidden = true;
+
     myName = nameField.value;
+    myUUID = data.uuid;
+    myDraftID = data.draftNum;      // @TODO: reset these after tournament is over
+    myPlayerID = data.playerNum;    
+
+    // Cookies.set('loaded', true);
+    document.cookie = `joined=true`;                // initial cookie values
+    document.cookie = `name=${myName}`;
+    document.cookie = `uuid=${myUUID}`;
+    document.cookie = `playerid=${myPlayerID}`;
+    document.cookie = `draftid=${myDraftID}`;
+    // `dark_mode=true; Secure; HttpOnly; SameSite=Strict; max-age=14400; name=${myName}; socketid=12345678; draftid=${myDraftID}; playerid=${myPlayerID}; page=join`;  
+    // expires after 4 hours; to delete a cookie, use max-age=-1 (expires 1 sec ago)
+
     let item = document.createElement('li');
-    item.textContent = nameField.value;
-    nameField.value = '';
+    item.textContent = nameField.value;             
     playerList.appendChild(item);
-    myDraftID = data.draftNum;      // @TODO: reset after tournament is over?
-    myPlayerID = data.playerNum;
+    nameField.value = '';                   // clear input field
 });
 
 // Another player has been added
@@ -67,8 +96,8 @@ clientSocket.on('newPlayerJoined', (data) => {
 
 // Signal to update # users connected
 clientSocket.on('userCount', (data) => {
-    userCount.innerText = `${data.numUsers}`;
-    usersNeeded.innerText = `${ nltZero(8 - data.numUsers) }`;
+    userCount.textContent = `${data.numUsers}`;
+    usersNeeded.textContent = `${ nltZero(8 - data.numUsers) }`;
 });
     // @TODO:  ^  combine these?  v
 
@@ -81,15 +110,15 @@ clientSocket.on('listData', (data) => {
 
 // Server has sent requested card data from search
 clientSocket.on('cardSearchReply', data => {
-    if(data) {
-        cardFrame.innerHTML = '';
-        let cardImg = document.createElement('img');
-        cardImg.src = `images/${data.id}.jpeg`;
-        cardFrame.appendChild(cardImg);
-        cardInput.value = '';
+    if(data.info) {
+        exampleCard.src = `images/${data.id}.jpeg`;
         cardInfo.innerHTML = data.info;
+        cardInput.value = '';
     }
-    else cardInfo.innerHTML = "<em>Card not found</em>";
+    else {
+        //exampleCard.src = "images/603.jpeg";
+        cardInfo.innerHTML = "<em>Card not found</em>";
+    }
 });
 
 // Signal to clear "sign-up sheet" for players who were on the list
@@ -101,17 +130,16 @@ clientSocket.on('clearSignup', () => {
 clientSocket.on('prepareForDraft', () => {
     // request pack 1
     clientSocket.emit('packRequest');
-
-    // update page to draft.html
-    $('#join').attr('hidden', true);
-    $('#open').attr('hidden', false);
-
-    // @TODO: transition to black background, if possible, before showing "Open 1st pack" button
+    document.cookie = `page=draft`;        // SAVE GAME STATE
+    fadeOut(); 
+    fadeInDraft();  // update page to "open"/"draft" and fade back in
 });
 
 // Server has sent us our 1st pack
 clientSocket.on('firstPack', (data) => {
     myPack = data.pack;  // array of #
+    document.cookie = `pack=${myPack}`;
+    document.cookie = "readytodraft=true";
     clientSocket.emit('readyToDraft');
 });
 
@@ -119,13 +147,16 @@ clientSocket.on('firstPack', (data) => {
 clientSocket.on('startDraftTimer', () => {
     myTimer.start();        // updates time on page thanks to updateDraftTime() callback fn passed to Timer object
     clientSocket.emit('timerStarted');
+    document.cookie = "timerstarted=true";
 });
 
 // Will be needed later to resync timer
 clientSocket.on('timeRemaining', (data) => {
     //myTimer.stop();
-    myTimer.reset( data.min, data.sec );  // @TODO: test with just reset()
-    //myTimer.start();
+    myTimer.reset( data.min, data.sec );    // @TODO: test this -- just reset() without stop & start
+    //myTimer.start();                      // @TODO:  if disconnected, send request for time upon reconnecting
+    document.cookie = `minleft=${data.min}`;
+    document.cookie = `secleft=${data.sec}`;
 });
 
 // Signal to begin drafting a pack
@@ -140,39 +171,43 @@ clientSocket.on('rotatedCardsReady', () => {
     clientSocket.emit('rotatedCardsRequested', {draftNum: myDraftID, playerNum: myPlayerID} );    // { draftID, playerID }
 });
 
+// clientSocket.on('rotatedCards', (data) => { ... } );   // not used here - located in "drafting.js"
+
 // Server has sent us our NEXT pack (2 or 3)
 clientSocket.on('nextPack', (data) => {    // { pack, packNum }
-    console.log("my pack before next pack: " + myPack);
+    // console.log("my pack before next pack: " + myPack);
     myPack = data.pack;     // pack received
-    console.log("new pack # " + data.packNum + " received: " + myPack);
+    // console.log("new pack # " + data.packNum + " received: " + myPack);
     draftOnePack(data.packNum, myDraftID, myPlayerID, addToCardsKept);
 });
 
-// ... ALL PACKS have been DRAFTED and DECKS have been ASSEMBLED
+// ... LATER, ALL PACKS have been DRAFTED and DECKS have been ASSEMBLED
 
 // Signal to prepare to play
-// clientSocket.on('prepareToPlay', () => {
-    
-// });
+clientSocket.on('prepareToPlay', () => {        // This only occurs once after decks have been assembled
+    //prepare game play screen
+    fadeOut();
+    fadeInPlay();
+    document.cookie = "page=play";
+});
 
 // Signal to reset timer for Round 1/2/3
 clientSocket.on('resetTimer', () => {
-    // prepare game play screen
-    $.getScript('play.js');
-    $('#build').attr('hidden', true);
-    $('#play').attr('hidden', false);
-    myTimer.stop();
-    myTimer.reset(50,0);
-    
+    myTimer.reset(50,0)
+    // matchTimerDiv.removeClass('text-red');                                      // in case time was low/up
+    document.cookie = `minleft=50`;
+    document.cookie = `secleft=0`;
 });
 
 // Server has the pairing info ready
 clientSocket.on('pairingInfoReady', () => {
     clientSocket.emit('pairingRequest', { draftNum: myDraftID, playerNum: myPlayerID } );
+    document.cookie = "pairingrequested=true";                                              // GAME STATE
+    document.cookie = "pairingreceived=false"
 });
 
 // Server has sent us our pairing info
-clientSocket.on('pairingInfo', (data) => {      // { match, opponentNum }
+clientSocket.on('pairingInfo', (data) => {      // { match, opponentNum, opponentName }
     // Okay, match is...
     myMatchID = data.match;                     // e.g. 5v7
     // so I'm playing against...
@@ -180,25 +215,30 @@ clientSocket.on('pairingInfo', (data) => {      // { match, opponentNum }
     // whose name is... data.opponentName
     myOppName = data.opponentName;
 
+    document.cookie = "pairingreceived=true"
+    document.cookie = `matchid=${myMatchID}`;                                               // GAME STATE / info
+    document.cookie = `oppid=${myOpponentID}`;
+    document.cookie = `oppname=${myOppName}`;
+    document.cookie = "pairingrequested=false";
+
     clientSocket.emit('readyToPlay', { draftNum: myDraftID, playerNum: myPlayerID });
     //clientSocket.to(`draft${myDraftID}-match${myMatchID}`).emit('readyFreddie', { message: "you ready?"});
 })
 
 // Signal to begin the match
-clientSocket.on('beginMatch', () => {
-    console.log("whoo hoo, beginning a match!");
-    myTimer.setDisplayFunc( updateMatchTime );      // switch to play clock
+clientSocket.on('beginMatch', (data) => {
+    console.log("whoo hoo, beginning match " + data.roundNum );
     myTimer.start();                                // and start clock
-
+    document.cookie = "playing=true";
     // communication occurs via match "room" ID, e.g. draft0-match5v7
     // or clientSocket.broadcast?  check documentation
     //clientSocket.emit... (`draft${myDraftID}-match${matchID}`).emit('chatMsg', { message: "info" } );
 
             // GAME EVENTS NEEDED:
-    // untap if tapped by mistake
-    // phase begins                                         //   @TODO: send event entering/leaving main
-    // clean-up phase, end-of-turn, discard, pass           //   @TODO update phase and progress bar
     // player taps non-basic land/artifact/creature for mana //   @TODO: send event with mana update info
+    // card enters opponents battlefield or GY/Exile zone   //  @TODO: IMPORTANT - upon cardMoved event, show opp's card
+    // clean-up phase, end-of-turn, discard, pass           //  @TODO: anything special for these sub-phases?
+    
     // player moves spell/perm from one zone to another     //   @TODO: send event with "area" and card #
     // deal/receive damage                                  //   @TODO: update my life total and send update event
     // player attacks/blocks with creature(s)               //   @TODO: yikes    
@@ -218,21 +258,11 @@ clientSocket.on('beginMatch', () => {
     // player begins turn, untaps all                       // Button ADDED.  Sends notification as chat message
     // player draws card (I/send and opp/receive)           // Button ADDED.  Sends notif. as chat msg
     // look through library and choose card                 // Upgraded method to modal. Sends notif. as chat msg when looking, and when done ("player stops looking")
-    // proceed to next phase                                // Progress bar and phase both update
+    // proceed to next phase                                // Progress bar and phase both update (Alt + a or p proceeds to next phase)
     // players can click to adjust life totals              // (including Alt + click)
+    // phase begins or next turn                            // Sends event when entering phase / next turn    
     
-});
-
-clientSocket.on("updatePhase", (data) => {
-    // take current phase from opponent via server and update progress bar and info in sidebar
-});
-
-clientSocket.on("cardToZone", (data) => {
-    //   @TODO: send & receive event with "area" and card #
-    // take "area" and card # and move card to its new zone
-    // e.g. plays a land
-    // casts creatr, artif, sorc, inst or ench.
-    // or spell or perm. is put in graveyard
+    
 });
 
 clientSocket.on('youResigned', (data) => {
@@ -240,19 +270,26 @@ clientSocket.on('youResigned', (data) => {
 });
 
 
-// ... game1 result --> game 2 --> game 2 result --> game 3 or match done
+// @TODO: if out of time for current round, signal to any matches still ongoing: turn 0
+// ... after 5 turns, collect and tally result(s)
 // ... un-join players from match room
-// ... if time left in round, allow players finished to go from waiting room
-// ... to spectate (temporarily join match room) with option to leave before time in round
-// ... when last match ends, proceed to next round
-// ... calc and issue pairings, start clock and repeat
-// ... 
+
+// @TODO: if time left in round, allow players finished to go from waiting room
+//        to spectate (temporarily join match room) with option to leave before time in round
 
 
 // Functions
+function addToCardsKept( newCards ) {
+    console.log("Adding pack picks to total picks");
+    allCardsKept = allCardsKept.concat(newCards);
+    document.cookie = `allpicks=${allCardsKept}`;
+    //allCardsKept = [...allCardsKept, ...newCards];     // compiler might complain it's not "iterable"
+    console.log("allCardsKept: " + allCardsKept);
+}
+
 function populateList( players ) {
     // empty contents of list first
-    playerList.innerHTML = '';
+    playerList.innerHTML = '';                  
 
     for(let i = 1; i < players.length; i+=2) {
         let item = document.createElement('li');
@@ -265,36 +302,52 @@ function nltZero( num ) {
     if (num < 0) return 0;
     return num;
 }
-
-function updateDraftTime( min, sec ) {
-    // update timer
-    draftMin.text(`${min}`);
-    if(sec < 10) {
-        if(min == 0) {
-            // draftTimerDiv.removeClass('text-white');
-            draftTimerDiv.addClass('text-red');
-        }
-        draftSec.text(`0${sec}`);
-    }
-    else draftSec.text(`${sec}`);
-}
-                                        // @TODO: ^ consolidate to stay dry v
-function updateMatchTime( min, sec ) {
+    
+function pickTimer( timerDiv, minSpan, secSpan ) {
+    return function updateTime( min, sec ) {
         // update timer
-        matchMin.text(`${min}`);
+        minSpan.text(`${min}`);
         if(sec < 10) {
             if(min == 0) {
                 // matchTimerDiv.removeClass('text-white');         // !!!!!!!!!!!!!!!!!!
-                matchTimerDiv.addClass('text-red');       // @TODO: remember to remove later when restarting timer!
+                timerDiv.addClass('text-red');       // @TODO: remember to remove later when restarting timer!
             }
-            matchSec.text(`0${sec}`);
+            secSpan.text(`0${sec}`);
         }
-        else matchSec.text(`${sec}`);
+        else secSpan.text(`${sec}`);
+    }
 }
 
-function addToCardsKept( newCards ) {
-    console.log("inside call to addToCardsKept()");
-    allCardsKept = allCardsKept.concat(newCards);
-    //allCardsKept = [...allCardsKept, ...newCards];     // compiler might complain it's not "iterable"
-    console.log("allCardsKept: " + allCardsKept);
+const fadeOut = () => {
+    blackCurtain.style.zIndex = 20;        // bring to front
+        // NOTE: do not use setAttribute for style here, it will not work
+    blackCurtain.style.opacity = "1";       // make fully opaque (no see through)
+};
+const fadeIn = () => {
+    blackCurtain.style.opacity = "0";   // make fully transparent and
+    blackCurtain.style.zIndex = -1;     // move behind everything else
+};
+
+// @TODO: DRY these out, using srcPage & destPage passed in and then $(`#${srcPage}`).attr('hidden', true);
+const fadeInDraft = () => {
+    window.setTimeout( () => {
+        $('#join').attr('hidden', true);    // hide join screen
+        $('#open').attr('hidden', false);   // show open screen
+        fadeIn();
+    }, 3000);
+};
+const fadeInBuild = () => {
+    window.setTimeout( () => {
+        $('#draft').attr('hidden', true);   // hide draft screen
+        $('#build').attr('hidden', false);  // show build screen
+        fadeIn();
+    }, 3000);
+};
+const fadeInPlay = () => {
+    window.setTimeout( () => {
+        $('#build').attr('hidden', true);   // hide build screen
+        $('#play').attr('hidden', false);   // show play screen
+        blackCurtain.style.opacity = "0";   // make fully transparent
+        blackCurtain.style.zIndex = -1;     // move behind everything else
+    }, 3000);
 }
