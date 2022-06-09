@@ -1,4 +1,4 @@
-import Timer from './public/timer.js';
+import Timer from './server-timer.mjs';
 
 // Basic Player class
 class BasicPlayer {
@@ -24,15 +24,18 @@ class BasicPlayer {
         this.gamesPlayedThisRound++;
         let wantAnotherGame = false;
                                             
-        if(this.gamesWonThisRound >= 2) 
-            matchPoints += 3;               // match over, this player wins their match
+        if(this.gamesWonThisRound == 2) 
+            this.matchPoints += 3;               // match over, this player wins their match
 
         else if(this.gamesWonThisRound == 1.5 && this.gamesPlayedThisRound == 3) 
-            matchPoints += 1;               // match over, draw
+            this.matchPoints += 1;               // match over, draw
 
-        else if(this.gamesWonThisRound >= 0.5 && this.gamesPlayedThisRound < 3 ) 
+        else if( (this.gamesWonThisRound >= 0.5 && this.gamesPlayedThisRound < 3) || 
+                 (this.gamesWonThisRound == 0   && this.gamesPlayedThisRound == 1) )  
             wantAnotherGame = true;         // "play another game"
+        
         // else 1 or 2 games could have been played but we only have 0.5 point or 1 point
+        // else 1 game played but we lost (0 - 1)
         // else 0-2, loss, match over     
         
         // @TODO:  idea to refactor logic using fractions, e.g. for games played 1, 2, or 3, check ratio
@@ -49,18 +52,22 @@ class BasicPlayer {
     }
 
     forfeitMatch() {
-        let result = this.addGameResult(0);                         // add game losses
-        while(result != 0) {  result = this.addGameResult(0);  }    // until match is lost
+        let result = this.addGameResult(0);                    // add game losses
+        while(result) {  result = this.addGameResult(0);  }    // until match is lost
     }
 
     autoWinMatch() {
-        let result = this.addGameResult(1);
-        while(result != 0) {  result = this.addGameResult(1);  }    // until match is lost
+        let result = this.addGameResult(1);                    // add game wins
+        while(result) {  result = this.addGameResult(1);  }    // until match is won
     }
 
     calcGWP() {
         if(this.gamesWonTotal == 0) return 0;
-        return this.gamesWonTotal / this.gamesPlayedThisRound;    // @TODO: format to 2 or 3 decimal points
+        return this.gamesWonTotal / this.gamesPlayedTotal;    
+    }
+    
+    showInfo( lineNum ) {
+        console.log(`${lineNum}) ${this.id}  - ${this.name} - ${this.matchPoints}      - ${this.calcGWP().toFixed(2)}`);
     }
 
     randomInt( max ) {
@@ -109,9 +116,9 @@ export default class Tournament {
         this.timer = new Timer(30,0);   // set for 30 min?  (10 min / pack)
         this.currentPack = 1;
         this.theirPacks = [ [], [] ];
-        this.playersReadyToPass = 0;
+        this.playersReady = 0;
         this.pairings = [0,0,0,0,0,0,0,0];    // e.g. [4, 6, 3, 2, 0, 7, 1, 5]  after pairings
-        this.results = [0,0,0,0,0,0,0,0]        // index is: player's ID, and value is: games won this match
+        //this.results = [0,0,0,0,0,0,0,0]        // index is: player's ID, and value is: games won this match
         this.startTime;     // Date
         this.round = 1;
         this.endTime;       // Date
@@ -133,13 +140,12 @@ export default class Tournament {
 
     getCurrentTime() {  return this.timer.getTime();  }
 
-    getNumPlayersReady() {  return this.playersReadyToPass;  }
+    getNumPlayersReady() {  return this.playersReady;  }
 
-    incNumPlayersReady() {  this.playersReadyToPass++;  }
+    incNumPlayersReady() {  this.playersReady++;  }
 
-    resetNumPlayersReady() {  this.playersReadyToPass = 0;  }
+    resetNumPlayersReady() {  this.playersReady = 0;  }
 
-    // @TODO:  Use 2 for loops instead, if that's more efficient
     rotatePacks() {    // 'left' for clock-wise; 'right' for CCW            
         let p = 0;                                                  //      8  1
         let temp = this.theirPacks[0];                              //    7      2
@@ -222,35 +228,37 @@ export default class Tournament {
     }
 
     completeRound() {
-        // if round timer has ended...
+        if( !this.timer.timeLeft() ) {
+            // @TODO: if there's NO time left (round timer has ended)...
         
             // Are any matches still in progress?
-            // If yes, current turn = Turn 0  for those pairings
-            // Wait for those matches to finish
+            // then server will handle this with:  if( thisDraft.getNumPlayersReady() < PLAYERS_PER_DRAFT )
+            // @TODO:  current turn = Turn 0  for those still playing
+            // Result of that game determines match result and
+            // @TODO:  NO more games can be requested
+        }
 
          // (all matches have finished)
-        if( this.timer.timeLeft() )  this.timer.stop();     // stop timer
+        else this.timer.stop();     // stop timer
 
-        // @TODO: if there's still time left...
-        
-        // inc round#
-        this.round++;
-        //proceed to next round
-        // if round > 3  then end tournament and calc results table, showStandings()
-        // else calc pairings and proceed to next round
-            
-            // clear pairings not needed, they'll be overwritten
-            this.calcPairings();
+        this.timer.reset(50,0);
+
+        this.round++;               // inc round# and proceed to next round         
     }
 
     // for when round = 3 and the final match has ended
     endTournament() {
-        this.timer.stop();
         this.endTime = Date.now();
         // @TODO: what else?
+        this.players.sort( (a, b) =>  a.calcGWP() > b.calcGWP() );
+        this.showStandings();
     }
 
     showStandings() {
         // sort this.players by points and stats which determine place
+        console.log(`   id - name     - points - GW % `);
+        for(let p = 0; p < players.length; p++ ) { 
+            players[p].showInfo(p);    
+        }
     }
 }
