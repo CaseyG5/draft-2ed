@@ -1,5 +1,4 @@
 // let altPressed = false;      // redundant with build.js, yet code at bottom still works without either
-
 // Game play zones
 const hand = document.getElementById('hand');                       // <div>
 const landsArea = document.getElementById('lands-in-play');
@@ -11,18 +10,19 @@ const oppNonLands = document.getElementById('opp-non-lands');
 const oppGraveyard = document.getElementById('opp-graveyard');
 const oppExileZone = document.getElementById('opp-exiles');
 
-// Right side-bar elements
+// Right side-bar elements                                                      @TODO: FIX triple-time!
 const matchMin = $('#round-min');  // shows minutes remaining       // <span>
 const matchSec = $('#round-sec');  // shows seconds                 // <span>
 const matchTimerDiv = $('#round-timer');    // holds them both
 
-const activePlayerName = document.getElementById('player-name');    // <span>
+const activePlayerName = document.getElementById('whos-turn');      // <span>
 const turnNum = document.getElementById('turn-number');             // <span>
 const turnPhase = document.getElementById('turn-phase');            // <div>
-const progressDiv = document.getElementById('turn-progress');       // was <progress>, now <div>
+const progressDiv = document.getElementById('progress-div');        // was <progress>, now <div>
 const progBar = document.getElementById('prog-bar');                // <div> inside <div>
 const myLifePoints = document.getElementById('my-lifepoints');      // <span>
 const oppLifePoints = document.getElementById('opp-lifepoints');    // <span>
+const oppHandCount = document.getElementById('opp-cardsinhand');
 
 // Chat related elements
 const chatForm = document.getElementById('chat-form');              // <form>
@@ -40,6 +40,7 @@ const untapBtn = document.getElementById('untap-btn');
 const drawBtn = document.getElementById('draw-btn');
 const manaBtn = document.getElementById('mana-btn');
 const nextPhaseBtn = document.getElementById('nextphase-btn');
+      nextPhaseBtn.setAttribute('disabled', true);
 const tutorBtn = document.getElementById('tutor-btn');
 const view3Btn = document.getElementById('view3-btn');
 const reveal3Btn = document.getElementById('reveal3-btn')
@@ -69,6 +70,14 @@ const myLibrary = document.getElementById('my-library');            // <div>
 // Color picker modal for dual lands and Lotus
 const colorPicker = document.getElementById('color-picker');        // <dialog>
 
+// Icons for the 6 kinds of mana
+const square = document.getElementById('c-symbol');                 // <img>
+const sun = document.getElementById('w-symbol');
+const droplet = document.getElementById('u-symbol');
+const skull = document.getElementById('b-symbol');
+const flame = document.getElementById('r-symbol');
+const tree = document.getElementById('g-symbol');
+
 // Quantity elements for the 6 kinds of mana
 const colorless = document.getElementById('colorless-qty');         // <span>
 const white = document.getElementById('white-qty');
@@ -77,32 +86,49 @@ const black = document.getElementById('black-qty');
 const red = document.getElementById('red-qty');
 const green = document.getElementById('green-qty');
 
+// Opponent's icons & quantities
+const oppSquare = document.getElementById('opp-c-symbol');                 // <img>
+const oppSun = document.getElementById('opp-w-symbol');
+const oppDroplet = document.getElementById('opp-u-symbol');
+const oppSkull = document.getElementById('opp-b-symbol');
+const oppFlame = document.getElementById('opp-r-symbol');
+const oppTree = document.getElementById('opp-g-symbol');
+const oppColorless = document.getElementById('opp-c-qty');          // <span>
+const oppWhite = document.getElementById('opp-w-qty');
+const oppBlue = document.getElementById('opp-u-qty');
+const oppBlack = document.getElementById('opp-b-qty');
+const oppRed = document.getElementById('opp-r-qty');
+const oppGreen = document.getElementById('opp-g-qty');
+
+
 const phaseNames = ["Start turn", "Untap", "Upkeep", "Draw", "1st Main", "Combat", "2nd Main", "End of turn"];
 const phaseColors = ["#fcfe94", "#f8a969", "#9acd32", "#52b7e6", "#64e089", "#f96bb8", "#537aef", "#6f6597"];
 
-let cardsInLibrary = myDeck;    // create deck/library from "decklist"
-let myRollValue = -1;
-let oppRollValue = -1;
+let cardsInLibrary = myDeck.slice();    // create deck/library from "decklist"
+let gameNumber = 1;             document.cookie = "gamenumber=1";
+let myRollValue = 0;
+let oppRollValue = 0;
 let iPlayFirst = false;
 let myTurn = false;
+let barPosAsPerc = 0.0;
+
 let cardsInHand = [];
-let numCardsInHand = 0;         // @TODO: just use cardsInHand.length?
 let landsInPlay = [];
-let nonLandsInPlay = []
-let numCardsInPlay = 0;         // @TODO: just use .length?
+let nonLandsInPlay = [];
+let allMyCardsInView = [];      // array of card ID #s for all my cards in view (my hand, in play, in GY, in exile) ... 603a, or 603b if duplicate, 603c, 603d, 603e
 let cardsInGY = [];
-let numCardsInGY = 0;           // @TODO: just use cardsInGY.length
 let cardsInExile = [];
-let numCardsInExile = 0;        // @TODO: just use cardsInGY.length
-let oppNumCardsInHand = 0;
 let myGyShown = true;
+
+let oppNumCardsInHand = 0;
+let oppLandsInPlay = [];
+let oppNonLandsInPlay = [];
+let oppCardsInGY = [];          
+let oppCardsInExile = [];
+let oppAllCardsInView = [];     // array of card ID #s for all opponent's cards in view ... e.g. 603o, or 603p if duplicate, 603q, 603r, 603s 
 let oppGyShown = true;
-let currentSelectedCard;
-// let oppLandsInPlay = [];
-// let oppNonLandsInPlay = [];
-// let oppCardsInGY = [];          
-// let oppCardsInExile = [];
-let gameNumber = 1;             document.cookie = "gamenumber=1";
+
+let currentSelectedCard;        // img element
 
 myTimer.stop();
 myTimer.setDisplayFunc( pickTimer(matchTimerDiv, matchMin, matchSec) );   // set timer to display on play page
@@ -111,32 +137,33 @@ shuffleDeck();  // auto shuffle first
 //for(let c = 0; c < 7; c++ ) addCardToHand( cardsInLibrary.pop() );    // to automatically draw 7
 
 // DRAWS 1 card to hand, adding various event listeners to/for it
-function addCardToHand( card ) {
-    cardsInHand.push(card);
-    numCardsInHand++;
+function addCardToHand( cardNumber ) {
+    cardsInHand.push(cardNumber);
 
     let cardImage = document.createElement('img');
 
-    cardImage.src = `images/${card}.jpeg`;        // DO NOT CHANGE PATH, otherwise slice() will need a new range
-    cardImage.classList.add('scale-in-hand');
+    cardImage.src = `images/${cardNumber}.jpeg`;        // DO NOT CHANGE PATH, otherwise slice() will need a new range
+    // cardImage.classList.add('scale-in-hand');
+    const newID = newCardID(cardNumber);              // checks allMyCardsInView and returns a unique ID
+    cardImage.id = newID;   
+
     cardImage.draggable = true;
 
     // Event listeners for newly added/drawn card
     cardImage.addEventListener( 'dragstart', (e) => {   
-        currentSelectedCard = e.currentTarget ;
-            // ^ combine? v
-        currentSelectedCard.style = "opacity: 0.3; cursor: grabbing";
+        currentSelectedCard = e.currentTarget;                          // should be a ref to cardImage
+        currentSelectedCard.style = "opacity: 0.3; cursor: grabbing; border-radius: 10px";
     });
 
     cardImage.addEventListener( 'dragend', (e) => {
         e.currentTarget.style = "opacity: 1;"; // change cursor type?
         setTimeout( () => {
-            nonLandsArea.style = "border: 0px";
-            landsArea.style = "border: 0px";
+            nonLandsArea.style = "border: 0px";     // @TODO:  test style.border = "0px"
+            landsArea.style = "border: 0px";        //  "       "
         },200);
     });
 
-    cardImage.addEventListener( 'dblclick', event => {
+    cardImage.addEventListener( 'dblclick', event => {  // @TODO:  switch to function handleDoubleClick() { }
         // if parent element is nonLandArea or landArea...
         if( cardImage.parentElement == landsArea || cardImage.parentElement == nonLandsArea) {
             if( cardImage.classList.contains('tapped') )
@@ -144,19 +171,39 @@ function addCardToHand( card ) {
             else {
                 // tap card if it's a basic land or artifact // later we'll add non-basics/duals
                 // perhaps including how much many card produces when tapped within the card object
-                cardImage.classList.add('tapped');
                 const cardNumber = Number(cardImage.getAttribute('src').slice(7,10));
                 addManaToPool( cardNumber );
+
+                cardImage.classList.add('tapped');
+                
+                if( cardImage.parentElement == landsArea) {
+                    clientSocket.emit("cardTapped", { ourDraftID: myDraftID, ourMatchID: myMatchID, area: "lands", cardNum: cardNumber, cardID: newID } );
+                }
+                else if(cardImage.parentElement == nonLandsArea) {
+                    clientSocket.emit("cardTapped", { ourDraftID: myDraftID, ourMatchID: myMatchID, area: "nonlands", cardNum: cardNumber, cardID: newID } );
+                }
             }
         }
     });
-    // cardImage.addEventListener( 'mouseover', () => {     // could also use 'rightclick'
-    //     // if hover more than a sec or two...
-    //          // transform: scale to 130%
+
+    // cardImage.addEventListener('drop', event => {   // another card is dropped on this card
+        // TEST 1: first step may be to move dropped card (not this card) NEXT to this card
+        // by making it the next sibling (easy with jQuery)
+
+        // place currentSelectedCard (dropped card) behind cardImage (this card) and offset (20, -20) ish
+        // but still on manafield / battlefield, whatever zone this card is in, cardImage.parentElement
+        // flex-start/center may no longer be suitable for zone divs
+        // z-index must be lower than this card, and "position: relative" can be used for dropped card
+        // they must be "linked" so they tap together
+        // how to link them?
+        // later perhaps: how to handle doubly enchanted/equipped cards
     // });
-    // cardImage.addEventListener('auxclick', (e) => {
+
+    // cardImage.addEventListener('auxclick', (e) => {     // @TODO:  Find out why this does not work
     //     e.preventDefault();      // need to prevent system defalt or contextual menu
-    //     //toggle transform
+    //     
+    //     else if(cardImage.parentElement == landsArea) cardImage.classList.toggle('scale-on-manafield');
+    //     else if(cardImage.parentElement == nonLandsArea) cardImage.classList.toggle('scale-on-battlefield');
     // });
 
     hand.appendChild(cardImage);
@@ -165,7 +212,7 @@ function addCardToHand( card ) {
 // Land Area event listeners
 landsArea.addEventListener( 'dragover', (event) => {
     event.preventDefault();
-    landsArea.style = "background: #555;";
+    landsArea.style = "background: #444;";
 });
 
 landsArea.addEventListener( 'dragleave', (event) => {
@@ -173,28 +220,31 @@ landsArea.addEventListener( 'dragleave', (event) => {
 });
 
 landsArea.addEventListener( 'drop', event => {
-    currentSelectedCard.draggable = false;
-    currentSelectedCard.classList.replace('scale-in-hand', 'scale-on-manafield');
-    //currentSelectedCard.style = "width: 72px; height: 100px;";
-    let cardNum = currentSelectedCard.src.slice(7,10);
-    let index = cardsInHand.indexOf( cardNum, 0);
-    cardsInHand.splice( index, 1 );       
-    document.cookie = `cardsinhand=${cardsInHand}`;     
-    landsArea.appendChild(currentSelectedCard);
-    document.cookie = `landsinplay=${landsInPlay}`;
+    if(currentSelectedCard.parentElement != landsArea && currentSelectedCard.parentElement != nonLandsArea) {     // drop in place (no movement) has no effect
 
-    clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "lands", cardNum: cardNum });       // enable for live testing
-    
-    numCardsInHand--;           // or just refer to cardsInHand.length
-    landsInPlay.push(cardNum);
-    numCardsInPlay++;
-    landsArea.style = "border: 2px solid yellowgreen";
+        const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );  // let cardNum = currentSelectedCard.src.slice(7,10); did NOT work
+        
+        let index = cardsInHand.indexOf( cardNumber, 0);
+        cardsInHand.splice( index, 1 );    
+        landsInPlay.push(cardNumber);
+
+        document.cookie = `cardsinhand=${cardsInHand}`;     
+        document.cookie = `landsinplay=${landsInPlay}`;
+
+        const currentID = currentSelectedCard.id;
+        landsArea.appendChild(currentSelectedCard);
+        // @TODO: split into cardPlayed and cardMoved
+        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "lands", cardNum: cardNumber, cardID: currentID });       // enable for live testing
+        
+        // numCardsInPlay++;
+        landsArea.style = "border: 2px solid yellowgreen";
+    }
 });
-
+                                        // @TODO: ACCOUNT for cards PLAYED and HAND array!
 // Non-Land Area event listeners
 nonLandsArea.addEventListener( 'dragover', (event) => {
     event.preventDefault();
-    nonLandsArea.style = "background: #555;";
+    nonLandsArea.style = "background: #444;";
 });
 
 nonLandsArea.addEventListener( 'dragleave', (event) => {
@@ -202,81 +252,110 @@ nonLandsArea.addEventListener( 'dragleave', (event) => {
 });
 
 nonLandsArea.addEventListener( 'drop', event => {
-    nonLandsArea.appendChild(currentSelectedCard);
-    currentSelectedCard.classList.replace('scale-in-hand', 'scale-on-battlefield');
+    if(currentSelectedCard.parentElement != nonLandsArea && currentSelectedCard.parentElement != landsArea) {     // no effect for drop in place
+        
+        const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
+        console.log("card # of card dropped into non-Lands area is: " + cardNumber);
 
-    let cardNum = currentSelectedCard.src.slice(7,10);
-    let index = cardsInHand.indexOf( cardNum, 0);
-    cardsInHand.splice( index, 1 );
-    document.cookie = `cardsinhand=${cardsInHand}`;     
-    document.cookie = `nonlandsinplay=${nonLandsInPlay}`;
-    clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "nonlands", cardNum: cardNum });        // enable for live testing
-    
-    numCardsInHand--;                   // or just refer to cardsInHand.length
-    nonLandsInPlay.push(cardNum);
-    // refresh NL area
-    numCardsInPlay++;
-    nonLandsArea.style = "border: 2px solid yellowgreen";
+        let index = cardsInHand.indexOf( cardNumber, 0);
+        cardsInHand.splice( index, 1 );
+        nonLandsInPlay.push(cardNumber);
+
+        document.cookie = `cardsinhand=${cardsInHand}`;     
+        document.cookie = `nonlandsinplay=${nonLandsInPlay}`;
+
+        const currentID = currentSelectedCard.id;   
+        nonLandsArea.appendChild(currentSelectedCard);
+        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "nonlands", cardNum: cardNumber, cardID: currentID });        // enable for live testing
+        
+        // numCardsInPlay++;
+        nonLandsArea.style = "border: 2px solid yellowgreen";
+    }
 });
 
 
 // Graveyard event listeners
 graveyard.addEventListener( 'dragover', (event) => {
     event.preventDefault();
-    graveyard.style = "background: #555;";
+    graveyard.setAttribute('style', "background: #444");
 });
 
 graveyard.addEventListener( 'dragleave', (event) => {
-    graveyard.style = "background: #1e1e1e;"; 
+    graveyard.setAttribute('style', "background: #1e1e1e"); 
 });
 
 graveyard.addEventListener( 'drop', event => {
     currentSelectedCard.draggable = false;
-    currentSelectedCard.classList.remove('scale-in-hand', 'scale-on-battlefield');
-    let cardNum = currentSelectedCard.src.slice(7,10);
-    let index = -1;
     
+    const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
+    // let index = -1;
+    console.log("card # of card dropped into GY area is: " + cardNumber);
+    currentSelectedCard.classList.remove('tapped');     // prevent card being in GY tapped
+
     if(currentSelectedCard.parentElement == hand) {
-        index = cardsInHand.indexOf( cardNum, 0);
-        cardsInHand.splice( index, 1 );
-        // add to GY array if appl.
-        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "graveyard", cardNum: cardNum });      // enable for live testing
-        numCardsInHand--;           
-        document.cookie = `cardsinhand=${cardsInHand}`;     
+        console.log("hand array has length " + cardsInHand.length);
+        // index = cardsInHand.indexOf( cardNumber, 0);   
+        cardsInHand.splice( cardsInHand.indexOf( cardNumber, 0), 1 );
+        // console.log("index of card removed from hand: " + index);
+
+        document.cookie = `cardsinhand=${cardsInHand}`;
+        const currentID = currentSelectedCard.id;
+        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "graveyard", cardNum: cardNumber, cardID: currentID });      // enable for live testing       
+             
     } else if(currentSelectedCard.parentElement == nonLandsArea) {
-        index = nonLandsInPlay.indexOf( cardNum, 0);
-        nonLandsInPlay.splice( index, 1 );
-        // add to GY array if appl.
-        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "graveyard", cardNum: cardNum });  // enable for live testing
-        numCardsInPlay--;
+        console.log("nonlands array has length " + nonLandsInPlay.length);
+        // index = nonLandsInPlay.indexOf( cardNumber, 0);
+        nonLandsInPlay.splice( nonLandsInPlay.indexOf( cardNumber, 0), 1 ); 
+        // console.log("index of card removed from nonlands: " + index);
+        
         document.cookie = `nonlands=${nonLandsInPlay}`;
+       
+        const currentID = currentSelectedCard.id;
+        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "graveyard", cardNum: cardNumber, cardID: currentID });  // enable for live testing
+        // numCardsInPlay--;
+    }
+    else { // lands --> graveyard
+        console.log("lands array has length " + landsInPlay.length); 
+        // index = landsInPlay.indexOf( cardNumber, 0);
+        landsInPlay.splice( landsInPlay.indexOf( cardNumber, 0), 1 );
+        // console.log("index of card removed from lands: " + index);
+
+        document.cookie = `lands=${landsInPlay}`;
+        const currentID = currentSelectedCard.id;
+        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "lands", destArea: "graveyard", cardNum: cardNumber, cardID: currentID });  // enable for live testing
+        // numCardsInPlay--;
     }
     graveyard.appendChild(currentSelectedCard);
-    numCardsInGY++;
-    document.cookie = `cardsinyard=${cardsInGY}`;
+    cardsInGY.push(cardNumber);
+    // numCardsInGY++;
+    document.cookie = `cardsinyard=${cardsInGY}`;   // @TODO: update cardsInGY et al.
 });
 
 // Exile zone event listeners
 exileZone.addEventListener( 'dragover', (event) => {
     event.preventDefault();
-    // exileZone.setAttribute('style', "background-color: #555");
+    exileZone.setAttribute('style', "background-color: #444");
 });
 
 exileZone.addEventListener( 'dragleave', (event) => {
-    // exileZone.setAttribute('style', "background-color: #1e1e1e");
+    exileZone.setAttribute('style', "background-color: #1e1e1e");
 });
 
 exileZone.addEventListener( 'drop', event => {
     currentSelectedCard.draggable = false;
-    currentSelectedCard.classList.remove('scale-in-hand', 'scale-on-battlefield');
-    let cardNum = currentSelectedCard.src.slice(7,10);
-    let index = nonLandsInPlay.indexOf( cardNum, 0);
-    nonLandsInPlay.splice( index, 1 );
-    exileZone.appendChild(currentSelectedCard);
-    clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "exile", cardNum: cardNum });      // enable for live testing
-    numCardsInPlay--;           // TODO: UPDATE ... depends on source of removal
-    numCardsInExile++;
+    // currentSelectedCard.classList.remove('scale-in-hand', 'scale-on-battlefield');
+    const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
+    let index = nonLandsInPlay.indexOf( cardNumber, 0);
+    nonLandsInPlay.splice( index, 1 );                  // assume for now that target card is/was a non-land perm on the battlefield
     document.cookie = `cardsinexile=${cardsInExile}`;
+    exileZone.appendChild(currentSelectedCard);
+    cardsInExile.push(cardNumber);
+
+    const currentID = currentSelectedCard.id;
+    clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "exile", cardNum: cardNumber, cardID: currentID });      // enable for live testing
+    numCardsInPlay--;           
+    // numCardsInExile++;
+    
 });
 
 //
@@ -303,18 +382,18 @@ document.getElementById('toggle-opp-gy-exile').addEventListener( 'click', event 
 // oppName.textContent = `[opp name]`;     // USE:  oppName.textContent = `${myOpponentID}-${myOppName}`;
 
 function clog(msg) {
-    const nameElem = document.createElement('span');
+    //const nameElem = document.createElement('span');
     const msgElem = document.createElement('span');       
-    nameElem.classList.add('my-chat-name');                
-    nameElem.textContent = `${myName}:`;        // OR...  = "username:"  for local testing        
-    msgElem.innerText =  ` ${msg}\n`;         
-    chatLog.appendChild(nameElem);
+    // nameElem.classList.add('my-chat-name');                
+    // nameElem.textContent = `${myName}:`;        // OR...  = "username:"  for local testing        
+    msgElem.innerText =  `*** ${msg} ***\n`;            // @TODO: just append string instead of any HTML element?
+    //chatLog.appendChild(nameElem);
     chatLog.appendChild(msgElem);
     chatLog.scrollTo(0,100000);
 }
 
 // CHAT FORM/LOG
-chatForm.addEventListener('submit', (evt) => {      // @TODO:  ENSURE default is ACTUALLY prevented!
+chatForm.addEventListener('submit', (evt) => {     
     evt.preventDefault();
     if(chatInput.value) {
         const nameElem = document.createElement('span');
@@ -353,15 +432,17 @@ function shuffleDeck() {
     }
 }
 
-// MULLIGAN
+// MULLIGAN                             @TODO:  make "mulliganed" event so we can update opp's # cards in hand
 function mulligan(numCardsHad) {
-    let imgNum;
+    // let imgNum;
     for(let c = 0; c < numCardsHad; c++) {
-        imgNum =  Number( hand.lastChild.getAttribute('src').slice(7,10) ) ;
-        hand.removeChild(hand.lastChild);
-        numCardsInHand--;
-        cardsInLibrary.push(imgNum);
+        // imgNum =  Number( hand.lastChild.getAttribute('src').slice(7,10) ) ;
+        hand.removeChild(hand.lastChild);                       
+                // @TODO:  what about event listeners??
+        cardsInLibrary.push( cardsInHand.pop() );
     }
+    console.log("hand div: " + hand);
+    allMyCardsInView.length = 0;
     shuffleDeck();
     for(let i = 1; i < numCardsHad; i++) addCardToHand( cardsInLibrary.pop() );  // start with i = 1 instead of checking i < num - 1
 }
@@ -380,14 +461,15 @@ const handleUntapping = () => {
 
 // Phase update helper function
 function updatePhase(newValue) {            // proceeds to the next phase of the turn
+    progBar.style.marginLeft = `${newValue}%`;
     let index = (newValue / 12.5);
-    let currentPhase = phaseNames[index];
-    turnPhase.textContent = currentPhase;
-    document.cookie = `turnphase=${currentPhase}`;
+    let newPhase = phaseNames[index];
+    turnPhase.textContent = newPhase;
+    document.cookie = `turnphase=${newPhase}`;
 
     if(myTurn) {
-        if(currentPhase == "Untap") handleUntapping();
-        else if(currentPhase == "Draw") handleDraw();
+        if(newPhase == "Untap") handleUntapping();
+        else if(newPhase == "Draw") handleDraw();
         emptyManaPool();
     }
     // let red = randomInt(155) + 100; let green = randomInt(155) + 100; let blue = randomInt(155) + 100;
@@ -400,21 +482,15 @@ function updatePhase(newValue) {            // proceeds to the next phase of the
         // let myName = "my name"; let myOppName = "opp's name";        // local testing only
 // HANDLER function for phase update click/event
 function handlePhaseUpdate() {  // handle phases of "my turn"
-    let totalWidth = Number( window.getComputedStyle(progressDiv).width.slice(0,-2) );  // chop off 'px'
-    let barStartPos = Number(window.getComputedStyle(progBar).marginLeft.slice(0,-2) );  // using slice()
-    let oneFU = totalWidth / 8
-    let ratio = barStartPos / totalWidth;
-
-    if( ratio <= 0.750 ) {
-        let newPercentage = (barStartPos + oneFU) / totalWidth * 100;
-        progBar.style.marginLeft = `${newPercentage}%`;
-        updatePhase(newPercentage);
+    if( barPosAsPerc < 87.5 ) {
+        barPosAsPerc += 12.5;
+        updatePhase(barPosAsPerc);
         // send event entering/leaving phase
-        clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phaseValue: newPercentage } );    // enable for live testing
+        clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phaseValue: barPosAsPerc } );    // enable for live testing
     } 
     else {     // if value > .75 or equals .875 then turn is over - proceed to opponent's turn 
-        nextPhaseBtn.setAttribute('disabled', true);        // @TODO:  also prevent keyboard shortcut
-        progBar.style.marginLeft = "0";
+        nextPhaseBtn.setAttribute('disabled', true);        
+        barPosAsPerc = 0.0;
         updatePhase(0);
         clientSocket.emit("phaseUpdate", { ourDraftID: myDraftID, ourMatchID: myMatchID, phaseValue: 0 } );      // enable for live testing
         clientSocket.emit("yourTurn", { ourDraftID: myDraftID, ourMatchID: myMatchID } );                        // enable for live testing
@@ -422,12 +498,13 @@ function handlePhaseUpdate() {  // handle phases of "my turn"
         // @TODO: disable buttons like Search Library for opponent's turn
         myTurn = false;
         document.cookie = "myturn=false";  
-        activePlayerName.textContent = myOppName;     // @TODO: toggle?                   // enable for live testing
-        alert("It's now opponent's turn");      // it will now be their turn
+        activePlayerName.textContent = "THEIR";     // @TODO: toggle?                   // enable for live testing
+        //alert("It's now opponent's turn");      // it will now be their turn
         // then if opponent went first increment turn #
         if(!iPlayFirst) {
             turnNum.textContent++;    // works! instead of Number(string)++     
             document.cookie = `turn=${turnNum.textContent}`;                // SAVE GAME STATE
+            clog(`It is now TURN ${turnNum.textContent}`);
         } 
     }
 }
@@ -435,17 +512,17 @@ function handlePhaseUpdate() {  // handle phases of "my turn"
 // HANDLER function to draw for turn
 const handleDraw = () => {
     if (cardsInLibrary.length == 0) {
-        alert("0 cards left to draw — game lost");
+        clog("0 cards left to draw — game lost");
         clientSocket.emit("gameDone", { draftID: myDraftID, playerID: myPlayerID, oppID: myOpponentID, gameResult: "resigns"} );     // enable for live testing
         return;
     }
-    if (numCardsInHand > 7) {
-        alert("8 cards in hand is the max for now");
+    if (cardsInHand.length > 7) {
+        clog("8 cards in hand is the max for now");
         return;
     }
     addCardToHand( cardsInLibrary.pop() );
     notifyOpponent("draws for the turn");
-    clientSocket.emit("cardDrawn", { draftID: myDraftID, playerID: myPlayerID } );        // enable for live testing
+    clientSocket.emit("cardDrawn", { ourDraftID: myDraftID, ourMatchID: myMatchID } );        // enable for live testing
 };
 
 // HANDLER function for Tutor button click
@@ -481,6 +558,7 @@ const handleSearchLib = () => {
                 clientSocket.emit("cardDrawn", { ourDraftID: myDraftID, ourMatchID: myMatchID } );           // enable for live testing
                 addCardToHand( cardToGet );                                        // and add it to hand
                 setTimeout( () => {  tutorModal.close();  }, 1300);
+                // @TODO:  Test...  cImg.removeEventListener(this);
             })
             rowX.appendChild(cImg);
         }
@@ -490,25 +568,24 @@ const handleSearchLib = () => {
     shuffleDeck();                                      // auto shuffle "when done"
 };
 
-// Helper for drag & drop
-const handleDrop = (card) => {
-    threeCardDiv.appendChild(card);                         // and getData
-    console.log("threeCardDiv: " + threeCardDiv.childElementCount); // this count is increasing
-    notifyOpponent("reorders top cards");
-}
+
 
 // HANDLER function for "View Top 3" button click
 const handleViewTop3 = (oppTopCards) => {
     threeCardDiv.innerHTML = "";
     let selectedCard;
 
-    if(oppTopCards) {
+    if(oppTopCards.length > 0) {
         for( let c = 0; c < oppTopCards.length; c++) {
             let nextImg = new Image();                                 // quicker than document.createElement('img') ?
-            nextImg.setAttribute('src', `images/${oppTopCards[c]}.jpeg`);
+            nextImg.src = `images/${oppTopCards[c]}.jpeg`;   //.setAttribute('src', `images/${oppTopCards[c]}.jpeg`); not working?
             nextImg.classList.add('rounded');
             nextImg.setAttribute('draggable', true);
-            // drag and drop 
+            nextImg.addEventListener( 'dragstart', (evt) => {
+                selectedCard = evt.currentTarget;                           
+                // allow them to drag to reorder
+                
+            });
             threeCardDiv.appendChild(nextImg);
         }
     } else {    // my top cards
@@ -521,22 +598,30 @@ const handleViewTop3 = (oppTopCards) => {
             nextImg.addEventListener( 'dragstart', (evt) => {
                 selectedCard = evt.currentTarget;                           // @TODO: instead try setData()
                 // allow them to drag to reorder
-                
-                // evt.currentTarget.hidden = true;
+                                                                                    // and getData
             });
             threeCardDiv.appendChild(nextImg);
         }
     }
     view3Modal.showModal();     // SHOW the cards
 
-    threeCardDiv.addEventListener('dragover', function handleDragOver (evt) {
+    // Helper for drag & drop
+    const handleDrop = (card) => {
+        // threeCardDiv.appendChild(card);                                         
+        // console.log("threeCardDiv: " + threeCardDiv.childElementCount);     // this count is increasing
+        // notifyOpponent("reorders top cards");
+    }
+    const handleDragOver = (evt) => {
         evt.preventDefault();
-    });
+    }
+
+    threeCardDiv.addEventListener('dragover', handleDragOver );
     threeCardDiv.addEventListener('drop', handleDrop(selectedCard) );
 
     view3Modal.onclose = () => {
+        // remove dragstart event listener too
         threeCardDiv.removeEventListener('drop', handleDrop);
-        threeCardDiv.removeEventListener('dragover', handleDragOver);   // able to reference the function?
+        threeCardDiv.removeEventListener('dragover', handleDragOver);   // not able to reference the function
     }
 
     // SHUFFLE button click
@@ -545,6 +630,8 @@ const handleViewTop3 = (oppTopCards) => {
     // REORDER button click
     reorderBtn.addEventListener('click', () => {
         // submit new arrangement from drag & drop
+        // if my top 3, recorder my cards
+        // if opp's top 3, send new order
     });
 };
 
@@ -566,32 +653,36 @@ rollBtn.addEventListener('click', () => {
     let die1 = randomInt(6) + 1;
     let die2 = randomInt(6) + 1;
     myRollValue = die1 + die2;
-    notifyOpponent(`rolled a ${die1} and a ${die2} = ${die1 + die2}`);  
+    notifyOpponent(`rolled ${die1} + ${die2} = ${die1 + die2}`);  
     clientSocket.emit("diceRolled", { ourDraftID: myDraftID, ourMatchID: myMatchID, rollValue: (die1 + die2) } );        // enable for live testing
-    clog(`You rolled a ${die1} and a ${die2}  =  ${die1 + die2}`);      // clog() appends to my chat log
+    clog(`You rolled a ${die1} + ${die2}  =  ${die1 + die2}`);      // clog() appends to my chat log
 });
 
 // DRAW 7 button click
 draw7Btn.addEventListener( 'click', () => {
-    if ( cardsInLibrary.length >= 7 && numCardsInHand == 0) {
+    if ( cardsInLibrary.length >= 7 && cardsInHand.length == 0) {
         for(let c = 0; c < 7; c++ ) addCardToHand( cardsInLibrary.pop() );
-    }
-    clientSocket.emit("cardsDrawn", { draftID: myDraftID, playerID: myPlayerID, numDrawn: 7 } );          // enable for live testing
+        notifyOpponent("draws 7 cards");
+        clientSocket.emit("cardsDrawn", { ourDraftID: myDraftID, ourMatchID: myMatchID, numDrawn: 7 } ); // enable for live testing
+        hand.setAttribute('disabled', true); // @TODO: disable hand until "keep"
+    } 
 });
 
 // MULLIGAN button click
 mullBtn.addEventListener('click', () => {
-    notifyOpponent(`mulligans to ${numCardsInHand - 1}` );  // @TODO: update to "mulliganed" message so
-    mulligan(numCardsInHand);                               //        we know how many cards they have in hand
+    if(cardsInHand.length > 0) {
+        mulligan(cardsInHand.length); 
+        notifyOpponent(`mulligans to ${cardsInHand.length}` );  
+        clientSocket.emit("mulligans", { ourDraftID: myDraftID, ourMatchID: myMatchID } );
+    }                           
 });
 
 keepBtn.onclick = () => {       // after deciding to keep...
     notifyOpponent("keeps their hand");
     shuffleBtn.hidden = true;
-    rollBtn.hidden = true;      // no need to roll, unless for certain cards added later
     mullBtn.hidden = true;      // no more mulligans until maybe next game
     keepBtn.hidden = true;      // hide keep button too
-    //scryBtn.hidden = true;
+    hand.setAttribute('disabled', false); // @TODO: un-disable hand after keep
 };
 
 // SCRY button click (shows top card)
@@ -643,10 +734,7 @@ reveal3Btn.onclick = () => {
 
 // "REVEAL HAND to opponent" button click
 revealHandBtn.addEventListener('click', () => {
-    document.getElementById('reveal-modal').showModal();
-//     // that will be replaced by...
-//     // sending hand data to opponent
-    clientSocket.emit("handRevealed", { ourDraftID: myDraftID, ourMatchID: myMatchID, hand: cardsInHand} );        // enable for live testing
+    clientSocket.emit("handRevealed", { ourDraftID: myDraftID, ourMatchID: myMatchID, hand: cardsInHand } );        // enable for live testing
 });
 
 // "PROCEED TO NEXT PHASE" button click
@@ -657,12 +745,14 @@ tutorBtn.addEventListener( 'click', handleSearchLib );
 
 // RESIGN/CONCEDE GAME button click
 resignBtn.addEventListener('click', () => {
-    const affirmative = confirm("Are you sure you want to resign?");
+    const affirmative = confirm("Are you sure you want to resign?");  // @TODO: replace with custom modal to confirm
     if (affirmative) {
         fadeOut();
         // alert("Resigning this game...");
-        fadeIn();
-        clientSocket.emit("gameDone", { draftID: myDraftID, playerID: myPlayerID, oppID: myOpponentID, gameResult: "resigns"} );      // enable for live testing
+        window.setTimeout( () => {
+            clientSocket.emit("gameDone", { ourDraftID: myDraftID, ourMatchID: myMatchID, playerID: myPlayerID, oppID: myOpponentID, gameResult: "resigns"} );      // enable for live testing
+            fadeIn();
+        }, 3000);
         // update client's game info, 
     }  
 });
@@ -697,7 +787,8 @@ document.getElementById('g-symbol').addEventListener( 'click', (evt) => {
 
 // Life point inc/dec
 myLifePoints.addEventListener('click', () => {
-    adjustQuantity(myLifePoints, null);
+    adjustQuantity(myLifePoints, null);                 // @TODO:  click to dec!   alt+click to inc
+    clientSocket.emit("lifePoints", { ourDraftID: myDraftID, ourMatchID: myMatchID, lifeTotal: myLifePoints.textContent } );
 });
 oppLifePoints.addEventListener('click', () => {
     adjustQuantity(oppLifePoints, null);
@@ -713,14 +804,11 @@ window.addEventListener( 'keydown', keyEvent => {
     // if(keyEvent.key == "Alt") {
     //     altPressed = true;
     // }  
-    if(altPressed == true )
-        if(keyEvent.code == 'KeyA' || keyEvent.code == 'KeyP') handlePhaseUpdate();                                 
+    if(altPressed && myTurn) {
+        if(keyEvent.code == 'KeyA' || keyEvent.code == 'KeyP') handlePhaseUpdate();
+    }
+                                         
 });
-// window.addEventListener( 'keyup', keyEvent => {          // introduced in build.js
-//     if(keyEvent.key == "Alt") {
-//         altPressed = false;
-//     }
-// });
 
 // 2.
 // Adjust of quantity of MANA element passed in            // @TODO: Refactor this, see above
@@ -747,8 +835,8 @@ function adjustQuantity(textElem, iconLetter) {
             textElem.style.color = "lightgray";
         }
         else if(currentQty > prevQty) {
-            document.getElementById(`${iconLetter}-symbol`).classList.add('halo');
             document.getElementById(`${iconLetter}-symbol`).src = `mana/${iconLetter}-active.png`;
+            document.getElementById(`${iconLetter}-symbol`).classList.add('halo');
             textElem.style.color = getColor(iconLetter);
         }   
     }
@@ -757,103 +845,103 @@ function adjustQuantity(textElem, iconLetter) {
 function addOneMana( letter ) {
     switch(letter) {                        // can use ++ instead of = `${Number( white.textContent ) + 1}`
         case 'w':
-            white.textContent++;                                            // increase white mana
+            white.textContent++;                                        // increase white mana
             white.style.color = "yellow";
-            document.getElementById('w-symbol').classList.add('halo');
+            sun.src = 'mana/w-active.png';
+            sun.classList.add('halo');
             break;
         case 'u':
             blue.textContent++;                                         // increase blue mana
             blue.style.color = "rgb(0, 170, 255)";
-            document.getElementById('u-symbol').classList.add('halo');
+            droplet.src = 'mana/u-active.png';
+            droplet.classList.add('halo');
             break;
         case 'b':
             black.textContent++;                                        // increase black mana
             black.style.color = "purple";
-            document.getElementById('b-symbol').classList.add('halo');
+            skull.src = 'mana/b-active.png';
+            skull.classList.add('halo');
             break;
         case 'r':
             red.textContent++;                                          // increase red mana
             red.style.color = "red";
-            document.getElementById('r-symbol').classList.add('halo');
+            flame.src = 'mana/r-active.png';
+            flame.classList.add('halo');
             break;
         case 'g':
             green.textContent++;                                        // increase green mana
             green.style.color = "rgb(64, 255, 47)";
-            document.getElementById('g-symbol').classList.add('halo');
+            tree.src = 'mana/g-active.png';
+            tree.classList.add('halo');
     }
+    clientSocket.emit("manaAdded", { ourDraftID: myDraftID, ourMatchID: myMatchID, color: letter } );
 }
 
-function addManaToPool( cardID ) {
-    if( cardID > 896) {                        // BASIC LANDS
-        addOneMana('w');
-    }                      
-    else if( cardID > 893) {
-        addOneMana('u');
-    }                 
-    else if( cardID > 890) {
-        addOneMana('r');
-    }                 
-    else if( cardID > 887) {
-        addOneMana('g');
-    }                 
-    else if( cardID > 877) {
-        colorPicker.showModal();
-    }
-    else if( cardID > 874) {  // && cardID < 878      BASIC SWAMP
-        addOneMana('b');
-    } 
-    else if( cardID < 638) {                   // ARTIFACT MANA
-        tapArtifactForMana(cardID);
-    }
+function addManaToPool( cardNumber ) {
+    if( cardNumber > 896)       addOneMana('w');                                        // BASIC LANDS                
+    else if( cardNumber > 893)  addOneMana('u');            
+    else if( cardNumber > 890)  addOneMana('r');
+    else if( cardNumber > 887)  addOneMana('g');                
+    else if( cardNumber > 877)  colorPicker.showModal();                                // DUALS
+    else if( cardNumber > 874)  addOneMana('b');                // && cardNumber < 878  // BASIC SWAMP
+    else if( cardNumber < 638)  tapArtifactForMana(cardNumber);                         // ARTIFACT MANA 
 }
 
-function tapArtifactForMana( cardID ) {
-    switch(cardID) {
+function tapArtifactForMana( cardNumber ) {
+    switch(cardNumber) {
         case 599:
         case 627:
             colorless.textContent++;  colorless.textContent++;  colorless.textContent++;   
             // Basalt Monolith or Mana Vault - increase colorless mana
             colorless.style.color = "white";
-            document.getElementById('c-symbol').classList.add('halo');
+            square.src = 'mana/c-active.png';
+            square.classList.add('halo');
             break;
         case 600:
             // lotus - ask player what color they want
             break;
         case 629:
-            addOneMana('g');       // mox emerald - increase green mana
+            addOneMana('g');       // mox emerald - inc green mana
             break;
         case 630:
-            addOneMana('b');         // jet - increase black mana
+            addOneMana('b');         // jet - inc black mana
             break;
         case 631:
-            addOneMana('w');        // pearl - increase white mana
+            addOneMana('w');        // pearl - inc white mana
             break;
         case 632:
-            addOneMana('r');           // ruby - increase red mana
+            addOneMana('r');           // ruby - inc red mana
             break;
         case 633:
-            addOneMana('u');          // sapphire - increase blue mana
+            addOneMana('u');          // sapphire - inc blue mana
             break;
         case 637:
             colorless.textContent++;  colorless.textContent++;      // Sol Ring
             colorless.style.color = "white";
-            document.getElementById('c-symbol').classList.add('halo');
+            square.src = 'mana/c-active.png';
+            square.classList.add('halo');
     }
 }
 
-function resetQuantity(textElem, iconLetter) {
-    textElem.textContent = "0";
-    textElem.style.color = "lightgray";
-    document.getElementById(`${iconLetter}-symbol`).classList.remove('halo'); // needed otherwise JS doesn't think it has a classList
+function resetQuantity(numElem1, numElem2, iconLetter) {          // @TODO:  how to convince JS the params are the type claimed?
+    numElem1.textContent = "0";
+    numElem1.style.color = "lightgray";
+    numElem2.textContent = "0";
+    numElem2.style.color = "lightgray";
+    document.getElementById(`${iconLetter}-symbol`).src = `mana/${iconLetter}.png`;
+    document.getElementById(`${iconLetter}-symbol`).classList.remove('halo');   // doc.gebi() needed otherwise JS doesn't think it has a classList
+    document.getElementById(`opp-${iconLetter}-symbol`).src = `mana/${iconLetter}.png`;
+    document.getElementById(`opp-${iconLetter}-symbol`).classList.remove('halo');   // doc.gebi() needed otherwise JS doesn't think it has a classList
+
 }
 
 function emptyManaPool() {
-    resetQuantity(white, 'w');
-    resetQuantity(blue, 'u');
-    resetQuantity(black, 'b');
-    resetQuantity(red, 'r');
-    resetQuantity(green, 'g');
-    resetQuantity(colorless, 'c');
+    resetQuantity(white, oppWhite, 'w');      
+    resetQuantity(blue, oppBlue, 'u');       
+    resetQuantity(black, oppBlack, 'b');      
+    resetQuantity(red, oppRed, 'r');        
+    resetQuantity(green, oppGreen, 'g');      
+    resetQuantity(colorless, oppColorless, 'c');  
 }
 
 function randomInt( max ) {
@@ -874,10 +962,9 @@ function clearChildImages( parentElem ) {
     while(parentElem.lastChild) parentElem.removeChild(parentElem.lastChild);
 }
 
-
+//////////////////////// Socket Game Event Listeners //////////////////////////
 
 clientSocket.on("privateMsg", (data) => {     // socket ID & name OR opp ID & name
-    // console.log("received message: \"" + data.msg + "\" from " + myOppName);
     const nameElem = document.createElement('span');
     const msgElem = document.createElement('span');       // Yessss! 2 Spans solves the issue!
 
@@ -897,114 +984,203 @@ clientSocket.on("diceRolled", (data) => {       // opponent rolled the dice
     // record their value
     oppRollValue = data.rollValue
      
-    if(myRollValue > 0) {                       // did I roll already? if so, 
+    if(myRollValue != 0) {                       // did I roll already? if so, 
         if( myRollValue > oppRollValue) {           //compare and decide who begins the game
             iPlayFirst = true;
-            activePlayerName.textContent = `${myName}`;
-            alert("You won the die roll. You go first");            // I go first
+            myTurn = true;
+            rollBtn.hidden = true;      // no need to roll, unless for certain cards added later
+            activePlayerName.textContent = "MY";                //`${myName}`;     
+            nextPhaseBtn.setAttribute('disabled', false);
+            clog("You won the die roll. You go first");            // I go first
+            barPosAsPerc = 37.5;
         }
         else if(oppRollValue > myRollValue) {     
             iPlayFirst = false;  
-            activePlayerName.textContent = `${myOppName}`;
-            alert("Opponent won the die roll. They go first");      // They go first
+            myTurn = false;
+            rollBtn.hidden = true;      
+            activePlayerName.textContent = "THEIR";              //`${myOppName}`;
+            clientSocket.emit("youFirst", { ourDraftID: myDraftID, ourMatchID: myMatchID } );
+            // nextPhaseBtn.setAttribute('disabled', true);  // begins disabled
+            clog("Opponent won the die roll. They go first");      // They go first
         }
         else {                                                      // Tie. Roll again
-            myRollValue = -1;                   // "zero" out previous roll
-            alert("Tie - roll again");
+            myRollValue = 0;                   // "zero" out previous roll
+            clog("Tie - roll again");
             clientSocket.emit("rollAgain", { ourDraftID: myDraftID, ourMatchID: myMatchID } );       // enable for live testing
             // roll again
         }
-    }
+    } else activePlayerName.textContent = "THEIR";
     // Else I didn't roll yet. But when I do, I prefer Dos Equis
     // I mean...But when I do, it will be sent to opponent
 });
 
+clientSocket.on("youFirst", () => {
+    iPlayFirst = true;                          // @TODO:  DRY this out (same as above)
+    myTurn = true;
+    rollBtn.hidden = true;      // no need to roll, unless for certain cards added later
+    activePlayerName.textContent = "MY";                        //`${myName}`;     
+    nextPhaseBtn.setAttribute('disabled', false);
+    clog("You won the die roll. You go first");
+    barPosAsPerc = 37.5;
+});
+
 clientSocket.on("rollAgain", () => {
-    myRollValue = -1;
-    alert("Tie - roll again");
+    myRollValue = 0;
+    clog("Tie - roll again");
 });
 
 clientSocket.on("cardsDrawn", (data) => {
    oppNumCardsInHand += data.numDrawn;
-   alert("opponent now has " + oppNumCardsInHand + " cards in hand");
-   // @TODO: then update visual
+   oppHandCount.textContent = oppNumCardsInHand;
 });
 
-clientSocket.on("phaseUpdate", (data) => {   // data.phaseValue
-    updatePhase(data.phaseValue);
+clientSocket.on("mulligans", () => {
+    oppNumCardsInHand--;
+    oppHandCount.textContent = oppNumCardsInHand;
 });
 
-clientSocket.on("cardMoved", (data) => {       // Take area(s) & card (#) and append new image to opp's battlefield
-    let oppCard = document.createElement('img');
-    oppCard.src = `images/${data.cardNum}.jpeg`;
+clientSocket.on("cardTapped", (data) => {  // area, cardNum, cardID 
+    console.log("card tapped event received:  " + data.cardID + " in zone " + data.area);
+    const oppCard = document.getElementById(`${data.cardID}`);
+    oppCard.classList.add('opp-tapped');
+    // if(data.area == "lands") {    }
+    // else  {    }        // if (data.area == "nonlands")
+});
 
-    if(data.srcArea === "hand") {
-        oppNumCardsInHand--;
-        if(data.destArea === "lands") {
+clientSocket.on("phaseUpdate", (data) => {   // phaseValue
+    updatePhase(data.phaseValue);                                 // @TODO: Use handleUpdatePhase instead
+});                                              // OTHERWISE our prog bar will not move when opponent moves to next phase
+
+clientSocket.on("lifePoints", (data) => {  //  lifeTotal 
+    oppLifePoints.textContent = data.lifeTotal;
+});
+
+function newCardID( cardNumber ) {          // on MY SIDE
+    let cardID = "";
+    if(iPlayFirst) {            // I'm player A
+        if( !allMyCardsInView.includes(`${cardNumber}`) )  cardID = `${cardNumber}`;
+        else if( !allMyCardsInView.includes(`${cardNumber}b`) )  cardID = `${cardNumber}b`;
+        else if( !allMyCardsInView.includes(`${cardNumber}c`) )  cardID = `${cardNumber}c`;
+        else cardID = `${cardNumber}d`;                     // duplicates treated uniquely up to 4
+        
+    }
+    else {                      // I'm player B
+        if( !allMyCardsInView.includes(`${cardNumber}o`) )  cardID = `${cardNumber}o`;
+        else if( !allMyCardsInView.includes(`${cardNumber}p`) )  cardID = `${cardNumber}p`;
+        else if( !allMyCardsInView.includes(`${cardNumber}q`) )  cardID = `${cardNumber}q`;
+        else cardID = `${cardNumber}r`;                     
+    }
+    allMyCardsInView.push(cardID);
+    return cardID;
+}
+
+clientSocket.on("cardMoved", (data) => {       // Take area(s), card (#) and card ID and append new image to opp's battlefield
+    if(data.srcArea == "hand") {
+        
+        const oppCard = document.createElement('img');
+        oppCard.src = `images/${data.cardNum}.jpeg`;
+        oppCard.id = data.cardID;
+
+        if(data.destArea == "lands") {
+            
+            oppLandsInPlay.push(data.cardNum);           // push to array of lands (card #s)
             oppLands.appendChild(oppCard);          // add opponent's newly played card to our display
-        } else if(data.destArea === "nonlands") {
+        } 
+        else if(data.destArea == "nonlands") {
+            
+            oppNonLandsInPlay.push(data.cardNum);  
             oppNonLands.appendChild(oppCard);
-        } else if(data.destArea === "graveyard") {
+        } 
+        else if(data.destArea == "graveyard") {
+            
+            oppCardsInGY.push(data.cardNum);
             oppGraveyard.appendChild(oppCard);
         } 
-    } else if(data.srcArea !== "nonlands" && data.destArea === "graveyard") {
-        // move card from oppNonLands to oppGraveyard
-    }
+        // else if(data.destArea == "exile") {
+        //     oppCardsInExile.push(data.cardNum);
+        //     oppExileZone.appendChild(oppCard);
+        // }
+        oppAllCardsInView.push(`${oppCard.id}`);
+        oppNumCardsInHand--;
+        oppHandCount.textContent = oppNumCardsInHand;
+    } 
+    else if(data.destArea == "graveyard") {
+        const oppCard = document.getElementById(`${data.cardID}`);
+        
+        if(data.srcArea == "nonlands") {            // remove specified card from oppNonLandsInPlay
+            oppNonLandsInPlay.splice( oppNonLandsInPlay.indexOf( data.cardNum, 0), 1);      // both model/data rep                                                                                 
+        }
+        else if(data.srcArea == "lands") {          // remove card from oppLandsInPlay
+            oppLandsInPlay.splice( oppLandsInPlay.indexOf( data.cardNum, 0), 1 ); 
+        }
+        oppCardsInGY.push(data.cardNum);            // and add it to graveyard array
+        oppCard.classList.remove('opp-tapped');                                             // and view/object
+        oppGraveyard.appendChild(oppCard);          // move card to oppGraveyard
+    } 
+    // @TODO:  else if(data.destArea == exile) ...
 });
+
 
 clientSocket.on("yourTurn", () => {
     myTurn = true;
     document.cookie = "myturn=true";
-    activePlayerName.textContent = myName;
-    if(iPlayFirst) turnNum.textContent++;
-    alert("It's now your turn");
+    activePlayerName.innerText = "MY";              // `${myName}`;     
+    if(iPlayFirst) {
+        document.cookie = `turn=${++turnNum.textContent}`;      // inc turn # and save state
+        clog(`It is now TURN ${turnNum.textContent}`);
+    }
     nextPhaseBtn.setAttribute('disabled', false);
+    clog("It's your turn");
 });
 
 clientSocket.on("justUntapped", () => {
     // untap opponent's permanents in my view
     let tappedCards = document.querySelectorAll('.opp-tapped'); 
-                                                            
+    console.log("tapped cards: " + tappedCards);                                     
     for( card of tappedCards) {                             
-        card.classList.replace('.opp-tapped', '.inverted');              
+        card.classList.remove('.opp-tapped');              
     }
 });
 
 clientSocket.on("cardDrawn", () => {
    oppNumCardsInHand++;
-   // @TODO: then update visual
+   oppHandCount.textContent = oppNumCardsInHand;        // or just textContent++
 });
 
-clientSocket.on("top3Revealed", (data) => {
-    // use data.topThree    and call up viewtop3 modal
+clientSocket.on("top3Revealed", (data) => { // topThree
+    handleViewTop3(data.topThree);                         //and call up viewtop3 modal
 });
 
 clientSocket.on("handRevealed", (data) => {          // data.hand is their array of cards in hand
     console.log("Opponent's hand has cards " + data.hand);
-
+    oppHand.innerHTML = "";
     for(let c = 0; c < data.hand.length; c++) {
         let cImg = document.createElement('img');
         cImg.setAttribute('src', `images/${data.hand[c]}.jpeg`);
-        cImg.classList.add('rounded-sm');
+        cImg.classList.add('rounded-sm');                           // @TODO: Move to STYLE SHEET
         oppHand.appendChild(cImg);
     }
     document.getElementById('reveal-modal').showModal();
 });
 
-clientSocket.on("nextGame", (data) => {      // playsFirst  (playerID or oppID)
-    alert("moving on to next game");
+clientSocket.on("nextGame", (data) => {      // whoPlaysFirst  (playerID or oppID)
+    console.log("Moving on to next game");
     emptyZones();
-    resetQtysAndTurns(data.whoPlaysFirst);
+    prepareNextGame(data.whoPlaysFirst);
     reloadDeck();
     // GL HF begin game
     // (timer still going)
 });
 
-clientSocket.on("matchDone", () => {          
-    clientSocket.emit("leavesMatch", { ourDraftID: myDraftID, ourMatchID: myMatchID, msg: chatInput.value } );    // enable for live testing
+clientSocket.on("matchDone", () => {     
+    resetTable();
+    // reloadDeck();
+    // matchNumber++;
+    // gameNumber = 1;
+    console.log("leaving table...awaiting pairings for next round...");     
+    clientSocket.emit("leavesMatch", { ourDraftID: myDraftID, ourMatchID: myMatchID } );    // enable for live testing
     // go to "waiting room" to see other results
 });
-
 
 // TEST DECK:
 // const myDeck = [806, 672, 744, 657, 782, 751, 623, 780, 610, 792, 
