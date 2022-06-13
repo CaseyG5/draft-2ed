@@ -1,4 +1,4 @@
-import Tournament from './mclasses.mjs';
+import Tournament from './classes.mjs';
 import createPack from './createpack.mjs';
 
 // Global constants
@@ -10,30 +10,34 @@ let cards;
 let draftNumber = 0;        // @TODO: save next draft # to file in case server goes down
 let currentNumUsers = 0;
 let playersJoined = [];   // id, name, id, name, ... , id, name
+let allPlayers = [];
 let playersReady = 0;
 let activeDrafts = [];      // @TODO: have a way to halt joining after current sign-up for server maint.
 
 // server-app modules
 import express from 'express';
 const app = express();
-import http from 'http';
+import http from 'http';                // @TODO: how to switch to https?    { "connection": "keep-alive" }
 const server = http.createServer(app);
 import { Server } from 'socket.io';
 let io = new Server(server);       // An Express HTTP server listening on port PORT ready for socket connections
 import fs from 'fs';
 
-// Not needed just yet
-// try {
-//     cards = JSON.parse( fs.readFileSync('2ED.json', 'utf-8', (err, data) => {
-//         if(err) throw err;
-//         console.log("data read");
-//     }) )["cards"];  
+try {
+    cards = JSON.parse( fs.readFileSync('2ED.json', 'utf-8', (err, data) => {
+        if(err) throw err;
+        console.log("data read");
+    }) )["cards"];  
 
-// } catch (err) {
-//     console.log(err);
-// }
+} catch (err) {
+    console.log(err);
+}
 
-app.use( express.static('./public') );
+app.use( '/', express.static('./public') );
+
+app.use("/js.cookie.mjs", express.static('./node_modules/js-cookie/dist/js.cookie.mjs'));
+
+// app.use( express.cookie() );
 
 // app.get('/cards', (req, resp) => {
 //     console.log("path is: " + req.path);
@@ -50,8 +54,16 @@ server.listen(PORT, () => console.log(`Express HTTP server listening on port ${P
 
 // When a user connects, add the many event listeners
 io.on('connection', (socket) => {
-    
+    // tell client to check cookie data (socket id, game state)
+    // if one exists, grab draft id, player id, page, and game state
+    // route player back to the page they were on and restore game state
+
     console.log("User connected and given ID " + socket.id);
+    // @TODO:  reconnection idea
+    // if( allPlayers.includes()  )
+    // take user's name and previous uuid, held within cookies and look them up in playersJoined
+    // if found, reconnect user and update their new uuid to the original one
+
     currentNumUsers++;
     io.emit('userCount', {numUsers: currentNumUsers} );     // Give new user count to EVERYONE
     socket.emit('listData', {players: playersJoined} );     // Give the current list to user/client (socket) just joining
@@ -67,7 +79,7 @@ io.on('connection', (socket) => {
         playersJoined.push( data.name );        // name entered by user
         socket.join(`draft${draftNumber}`);     // group (or "room") ID
 
-        socket.emit('playerJoinOK', {draftNum: draftNumber, playerNum: (playersJoined.length / 2 - 1) } );      
+        socket.emit('playerJoinOK', {draftNum: draftNumber, playerNum: (playersJoined.length / 2 - 1), uuid: socket.id } );      
         socket.broadcast.emit('newPlayerJoined', {players: playersJoined} );
  
         console.log(`${playersJoined.length / 2} players have joined`)
@@ -105,23 +117,17 @@ io.on('connection', (socket) => {
             // notify players to start their timers
             io.to(`draft${draftNumber}`).emit('startDraftTimer');
 
-            // thisDraft.setupDisplay( (m,s) => console.log(m + ":" + s) );   // No longer needed with separate "server-timer.mjs" file
-
             // @TODO: Send time update every 30 seconds ?
             // setInterval( () => {
             //     io.to(`draft${draftNumber}`).emit('timeRemaining', thisDraft.getCurrentTime() );
             // }, 30000 );
 
-            // reinitialize playersJoined array for the next draft group
-            playersJoined.length = 0;
-
-            // reset players ready
-            playersReady = 0;
-
-            thisDraft.startDraft();     // start server's draft timer 
-
             // inc draft #
-            draftNumber++;   // @TODO: IMPORTANT - move this up earlier in case players are wanting to join the next draft
+            draftNumber++;   // @TODO: IMPORTANT - is this the earliest this statement can be, in case players are wanting to join the next draft?
+            allPlayers = [...allPlayers, ...playersJoined];
+            playersJoined.length = 0;   // reinitialize playersJoined array for the next draft group
+            playersReady = 0;           // reset players ready
+            thisDraft.startDraft();     // start server's draft timer 
         }
     });
 
@@ -136,15 +142,14 @@ io.on('connection', (socket) => {
     socket.on('cardPicked', (data) => {     // { draftNum, playerNum, theCards }
 
         let thisDraft = activeDrafts[data.draftNum];
-        console.log("received cardPicked event from player " + data.playerNum + " in draft " + data.draftNum +
-                " passing " + data.theCards.length + " cards");
+        // console.log("received cardPicked event from player " + data.playerNum + " in draft " + data.draftNum +
+        //         " passing " + data.theCards.length + " cards");
                 
         thisDraft.setPlayersPack(data.playerNum, data.theCards);
         thisDraft.incNumPlayersReady();
-        console.log(thisDraft.getNumPlayersReady() + " players ready to pass thier cards");
+        // console.log(thisDraft.getNumPlayersReady() + " players ready to pass thier cards");
         if( thisDraft.getNumPlayersReady() === PLAYERS_PER_DRAFT ) {
 
-                console.log("rotating cards");
             // rotate cards/packs L or R depending on pack#
             thisDraft.rotatePacks();
             
@@ -155,7 +160,7 @@ io.on('connection', (socket) => {
             // After rotating, if just 1 card had been rotated (last card rotated in is kept)
             if( data.theCards.length == 1 ) {   
                 
-                console.log("players just rotated and got back 1 card which is kept")
+                // console.log("players just rotated and got back 1 card which is kept")
     
                 // so inc pack # (move on to the next pack)
                 thisDraft.incPackNumber();
@@ -194,6 +199,7 @@ io.on('connection', (socket) => {
 
         // then if allAssembled, or numReady == 8
         if( thisDraft.getNumPlayersReady() === PLAYERS_PER_DRAFT ) {
+            io.to(`draft${data.draftNum}`).emit('prepareToPlay');
 
             thisDraft.stopDraft();      // reset timers to 50:00
             io.to(`draft${data.draftNum}`).emit('resetTimer');
@@ -236,7 +242,7 @@ io.on('connection', (socket) => {
         // another player ready
         thisDraft.incNumPlayersReady();
         if(thisDraft.getNumPlayersReady() == PLAYERS_PER_DRAFT) {
-            io.to(`draft${data.draftNum}`).emit('beginMatch');
+            io.to(`draft${data.draftNum}`).emit('beginMatch', {roundNum: thisDraft.round} );
             
             // start round
             thisDraft.startRound();
@@ -249,77 +255,158 @@ io.on('connection', (socket) => {
     })
 
     socket.on("privateMsg", (data) => {
-        console.log("private message received: " + data.msg);
-        console.log("passing along to your opponent in match " + data.ourMatchID);
+        //console.log("private message received: " + data.msg);
+        //console.log("passing along to your opponent in match " + data.ourMatchID);
         //socket.to(`${data.theID}`).emit("privateMsg", { theID: socket.id, msg: data.msg} );
-        // socket.to("match0v1").emit("privateMsg", {msg: data.msg} );
+        // socket.to("draft0-match0v1").emit("privateMsg", {msg: data.msg} );
         socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("privateMsg", {msg: data.msg} );
     });   // e.g. "draft2-match5v7"
 
+    socket.on("diceRolled", (data) => { // { ourDraftID: myDraftID, ourMatchID: myMatchID, rollValue: (die1 + die2) }
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("diceRolled", {rollValue: data.rollValue} );
+    }); 
+
+    socket.on("youFirst", (data) => {  // ourDraftID, ourMatchID
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("youFirst");
+    });
+
+    socket.on("cardsDrawn", (data) => {   // draftID, playerID, numDrawn
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("cardsDrawn", {numDrawn: data.numDrawn});
+    });
+
+    socket.on("mulligans", (data) => {   // ourDraftID, ourMatchID
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("mulligans");
+    });
+
+    socket.on("cardMoved", (data) => { // ourDraftID, ourMatchID, srcArea: "", destArea: "", cardNum, cardID
+        console.log("card moved event received");
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("cardMoved", { srcArea: data.srcArea, destArea: data.destArea, cardNum: data.cardNum, cardID: data.cardID } );
+    }); 
+
+    socket.on("cardTapped", (data) => { //  ourDraftID, ourMatchID, area (e.g. nonlands), cardNum, cardID 
+        console.log("card tapped event received");
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("cardTapped", { area: data.area, cardNum: data.cardNum, cardID: data.cardID } );
+    } );
+
+    socket.on("manaAdded", (data) => {  // ourDraftID, ourMatchID, color (letter) 
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("manaAdded", { color: data.color } );
+    });
+
+    socket.on("phaseUpdate", (data) => {    // ourDraftID, ourMatchID       ...phase, e.g. "draw" or "main1" or "combat"
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("phaseUpdate", {phaseValue: data.phaseValue} );
+    });
+
+    socket.on("lifePoints", (data) => {  //{ ourDraftID, ourMatchID, lifeTotal }
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("lifePoints", { lifeTotal: data.lifeTotal } )
+    });
+
+    socket.on("yourTurn", (data) => {     // ourDraftID, ourMatchID
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("yourTurn");
+    });
+
+    socket.on("justUntapped", (data) => {   // ourDraftID, ourMatchID
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("justUntapped");
+    });
+
+    socket.on("cardDrawn", (data) => {     // ourDraftID, ourMatchID
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("cardDrawn");
+    });
+
+    socket.on("top3Revealed", (data) => {  //  ourDraftID, ourMatchID, topThree
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("top3Revealed", { topThree: data.topThree } );
+    });
+
+    socket.on("handRevealed", (data) => {  // ourDraftID, ourMatchID, hand
+        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("handRevealed", {hand: data.hand} );
+    });
     
+    socket.on("gameDone", (data) => {    // ourDraftID, ourMatchID, playerID, oppID, gameResult
+        console.log("game done message received");
+        const thisDraft = activeDrafts[data.ourDraftID];
+        let playAgain = false;
+        let playerToBegin = -1;
 
-    socket.on("nextPhase", (data) => {    // ourDraftID, ourMatchID       ...phase, e.g. "draw" or "main1" or "combat"
-        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("nextPhase");
+        // Record the game result for both players, ...perhaps match result too if 0-2?
+        if( data.gameResult == "resigns" ) {
+            console.log("resignation received");
+            // I resign, my opponent wins this game
+            console.log("adding win for player " + data.oppID);
+            playAgain = thisDraft.getPlayer(data.oppID).addGameResult( 1 );
+            thisDraft.getPlayer(data.playerID).addGameResult( 0 );
+            //socket.emit("youResigned");
+            playerToBegin = data.playerID;
+        }
+        else if( data.gameResult == "draws") {
+            // We drew or agreed to a draw                           @TODO: draw agreement function/event (or NO DRAWS)
+            playAgain = thisDraft.getPlayer(data.oppID).addGameResult( 0.5 );
+            thisDraft.getPlayer(data.playerID).addGameResult( 0.5 );
+        }
+        console.log("playagain? " + playAgain);
+        if(playAgain) { // play another game
+            console.log("sending message to play next game");
+            io.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("nextGame", { whoPlaysFirst: playerToBegin } );
+        } 
+        else {
+            console.log("informing player the match is over")
+            io.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("matchDone");
+        }
     });
-
-    socket.on("handRevealed", (data) => {
-        socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("handRevealed", {theirHand: data.hand} );
-    });
-
-    socket.on("resigns", (data) => {    // draftID, playerID, oppID
-        // I resign, my opponent wins this game
-
-        let thisDraft = activeDrafts[data.draftID];
-
-        // Record the game result for both players, perhaps match result too if 0-2
-        let result = thisDraft.players[oppID].addGameResult( 1 );
-        thisDraft.players[playerID].addGameResult( 0 );
-
-        socket.emit("youResigned");
-        
-        if(result == 0)  // play another 
-            socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("nextGame");
-        else 
-            socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("matchDone");
-    });
-
-    socket.on("draw", (data) => {                       // @TODO:  DRY this out!
-        let thisDraft = activeDrafts[data.draftID];
-
-        // Record the game result for both players
-        let result = thisDraft.players[oppID].addGameResult( 0.5 );
-        thisDraft.players[playerID].addGameResult( 0.5 );
-
-        if(result == 0)
-            socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("nextGame");
-        else 
-            socket.to(`draft${data.ourDraftID}-match${data.ourMatchID}`).emit("matchDone"); 
-        
-    })
 
     socket.on("leavesMatch", (data) => {
-        socket.leave(`draft${data.ourDraftID}-match${data.ourMatchID}`);
-    });
+        socket.leave(`draft${data.ourDraftID}-match${data.ourMatchID}`);    // player leaves match "room", e.g. "draft0-match0v1"
+        
+        // @TODO: show standings if this was round 3
+        // otherwise...
+        let thisDraft = activeDrafts[data.ourDraftID];
+        thisDraft.incNumPlayersReady();
+        console.log(thisDraft.getNumPlayersReady() + " players ready for next round");
 
+        // then if all ready for next round, or numReady == 8   
+        // @TODO:  DRY this out! (repeats above)
+        if( thisDraft.getNumPlayersReady() === PLAYERS_PER_DRAFT ) {
+
+            thisDraft.completeRound();      // stops and resets timer to 50:00, then inc round #
+            
+            if( thisDraft.round > 3 ) {         // we're done
+                thisDraft.endTournament();      // end tournament and calc results table, showStandings()
+            }
+            else {  // calc pairings and proceed to next round
+                io.to(`draft${data.draftNum}`).emit('resetTimer');
+
+                thisDraft.showStandings();
+                thisDraft.calcPairings();   // pairings calculated within completeRound()
+                thisDraft.resetNumPlayersReady();
+
+                // tell all players to request pairing info
+                io.to(`draft${data.draftNum}`).emit('pairingInfoReady');
+            }
+        }
+        
+    });
 
 
     //////////////////// OTHER EVENTS ////////////////////
 
     // when user requests info/image for a card
-    socket.on('cardSearchRequest', (data) => {
+    socket.on('cardSearchRequest', (data) => {  // cardName  OR  cardNum
         let myCard;
         let cardInfo;                               // @TODO:  FIX "UNDEFINED" COST for LANDS
         let cardData = {};
-        
-        myCard = cards.find( card => String(card.name).toLowerCase() == String(data.cardName).toLowerCase() );
-            
+
+        if(data.cardName) {                         // search by name
+            myCard = cards.find( card => String(card.name).toLowerCase() == String(data.cardName).toLowerCase() );
+        } else if(data.cardNum) {
+            myCard = cards.find( card => card.multiverseid == data.cardNum );   // search by number
+        }  
+
         if (myCard) {
             // get card info based on search result
             cardInfo = `<strong>Name:</strong> ${myCard.name} <br>
             <strong>Cost:</strong> ${myCard.manaCost} <br>
-            <strong>Type:</strong> ${myCard.type} <br>
-            <strong>Text:</strong> ${myCard.text} <br>`;
+            <strong>Type:</strong> ${myCard.type} <br>`;
 
+            if(myCard.text) cardInfo += `<strong>Text:</strong> ${myCard.text} <br>`
+            if(myCard.flavor) cardInfo += `<strong>Flavor text:</strong> ${myCard.flavor} <br>`; 
             if(myCard.toughness) cardInfo += `<strong>P/T:</strong> ${myCard.power}/${myCard.toughness}`;    
             
             cardData = { id: myCard.multiverseid, info: cardInfo };
@@ -335,11 +422,12 @@ io.on('connection', (socket) => {
         console.log(`User with ID ${socket.id} disconnecting`);
         currentNumUsers--;
         // playersJoined.splice( playersJoined.indexOf( socket.id ), 2);    // Probably not necessary unless user changes mind right away
+                                                                            // but this won't work if next draft has begun (playersJoined cleared)
         socket.broadcast.emit('userCount', {numUsers: currentNumUsers} );  // Give updated count to everyone ELSE
         // socket.broadcast.emit('listData', {players: playersJoined} );
     });
 });
-
+                ///// NEXT:  consolidated resign/draw events and added several others
 
 // Notes:
 //  const userId = await fetchUserId(socket);       userId the same for all devices/tabs ??
