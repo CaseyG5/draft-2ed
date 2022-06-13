@@ -320,6 +320,7 @@ body {
             border-bottom: 2px solid #333;
             display: flex;
             flex-direction: column;
+            justify-content: space-around;
             align-items: center;
         }
             #opp-graveyard, #opp-exiles {
@@ -333,13 +334,32 @@ body {
                 align-items: center;
                 overflow-x: hidden;   
             }
-            #toggle-opp-gy-exile {
-                width: 100px;
+            #opp-graveyard > img,
+            #opp-exiles > img {
+                width: 126px;
+                height: 175px;
+                margin-top: -111px;
+                border-radius: 6px;
             }
+            #opp-graveyard :first-child,
+            #opp-exiles :first-child {
+                margin-top: 0px;
+            }
+
+            /* #toggle-opp-gy-exile {
+                width: 100px;
+            } */
+        #opp-mana {
+            width: 50px;
+            max-height: 265px;
+            border-left: 2px solid #555;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+        }
 
         #opp-permanents {
             width: calc(100vw - 370px); 
-            border-left: 2px solid #555;
             display: flex; 
             flex-direction: column; 
             justify-content: flex-end;
@@ -347,9 +367,10 @@ body {
         }
             #opp-lands {
                 height: 110px;
-                padding: 5px;
+                padding: 10px 5px 0px 5px;
                 display: flex;  
                 justify-content: center;
+                /* overflow-x: hidden; */
             }
             #opp-lands > img {
                 width: 72px; 
@@ -357,14 +378,23 @@ body {
                 margin-right: 15px;
                 border-radius: 3px; 
                 transform: rotate(180deg);
+                transition: 0s transform;
+                position: relative;
+                z-index: 16;
+            }
+            #opp-lands > img:hover {
+                transform: scale(1.4, 1.4) translate(10px, 14px);
+                transition-delay: 500ms;
+                position: relative;
+                z-index: 17;
             }
             
             #opp-non-lands {
                 height: 135px;
                 padding: 5px;
-                border-top: 1px dashed #333;
                 display: flex; 
-                justify-content: center
+                justify-content: center;
+                /* overflow-x: hidden; */
             }
             #opp-non-lands > img {
                 width: 90px; 
@@ -372,31 +402,37 @@ body {
                 margin-right: 18px;
                 border-radius: 4px;
                 transform: rotate(180deg);
+                transition: 0s transform;
+                position: relative;
+                z-index: 16;
             }
-
-            /* .inverted {
-                transform: rotate(180deg);
-            } */
+            #opp-non-lands > img:hover {
+                transform: scale(1.8, 1.8) translate(20px, 0);
+                transition-delay: 500ms;
+                position: relative;
+                z-index: 17;
+            }
 
             .opp-tapped {
-                transform: rotate(90deg);
+                transform: rotate(-270deg) !important;
             }
 
-            #turn-progress {
+            #progress-div {
                 width: 100%;
-                height: 5px;
-                margin-bottom: -2px;
+                height: 8px;
+                margin-bottom: -3px;
                 /* border: 1px solid lightgray;
                 border-radius: 2px; */
             }
             #prog-bar {
-                height: 5px;
+                height: 8px;
                 width: 12.5%;
-                border-radius: 2px;
+                border-radius: 4px;
                 background-color: #fcfe94;
                 margin-left: 0;
             }
-                /* how to target the actual progress bar? */
+                /* if using <progress>, is it possible to target/style the actual progress bar
+                 separately from the container? */
 
     #my-playarea {
         width: calc(100vw - 220px);
@@ -410,15 +446,15 @@ body {
         text-align: center;
     }
         #my-cards-in-play {
-            min-width: 812px;
+            /* min-width: 812px; */
             width: calc(100vw - 290px);
             display: flex; 
             flex-direction: column
         }
             #non-lands-in-play {
                 height: 145px;
-                border-bottom: 1px dashed #333;
-                padding: 5px;
+                /* border-bottom: 1px dashed #333; */
+                padding: 15px 5px 5px 5px;
                 display: flex;
                 justify-content: flex-start;
             }
@@ -427,6 +463,13 @@ body {
                 height: 125px;
                 margin-right: 18px;
                 border-radius: 4px;
+                transition: 0s transform; 
+            }
+            #non-lands-in-play > img:hover {
+                transform: scale(1.8, 1.8) translate(20px, 0);
+                transition-delay: 500ms;
+                position: relative;
+                z-index: 17;
             }
             
             #lands-in-play {
@@ -440,6 +483,13 @@ body {
                 height: 100px;
                 margin-right: 15px;
                 border-radius: 3px;
+                transition: 0s transform;
+            }
+            #lands-in-play > img:hover {
+                transform: scale(1.4, 1.4) translate(10px, 0);
+                transition-delay: 500ms;
+                position: relative;
+                z-index: 17;
             }
             
             .tapped {
@@ -455,10 +505,7 @@ body {
                 justify-content: space-between;
             }
                 .mana-box {
-                    
-                    border: none;
                     display: flex;
-                    flex-direction: row;
                     justify-content: space-between;
                     align-items: center;
                 }
@@ -469,7 +516,6 @@ body {
                     }
                     .symbol {
                         border-radius: 50%;
-                        cursor: pointer;
                     }
                     .halo {
                         box-shadow: 0 0 15px rgb(255, 240, 154);
@@ -488,6 +534,11 @@ body {
         height: 175px;
         margin-right: 3px;
         border-radius: 6px;
+        transition: 0s transform;
+    }
+    #hand > img:hover {
+        transform: scale(1.4, 1.4) translate(18px, -25px);
+        transition-delay: 500ms;
     }
           
         /* (see above)
@@ -497,17 +548,6 @@ body {
             margin-right: 3px;
             border-radius: 6px;
         } */
-
-        .scale-on-battlefield:hover {
-            transform: scale(1.8, 1.8) translate(20px, 0);
-            z-index: 16;
-        }
-        .scale-on-manafield:hover {
-            transform: scale(1.4, 1.4) translate(10px, 0);
-        }
-        .scale-in-hand:hover {
-            transform: scale(1.4, 1.4) translate(18px, -25px);
-        }
 
 #right-sidebar {
     width: 220px; 
@@ -522,8 +562,11 @@ body {
         width: 195px;
         display: flex;
         justify-content: space-evenly;
-        align-items: center;
+        /* align-items: center; */
     }
+        /* #my-info {
+
+        } */
         .life-points {
             font-size: 24px;
             cursor: pointer;
@@ -532,6 +575,12 @@ body {
             text-align: center;
             font-weight: 700;
         }    
+        #opp-info {                     /* @TODO:  how many other things with these same 4 entries? */
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            align-items: center;
+        }
 
     #chat-box {
         width: 185px;
@@ -546,7 +595,7 @@ body {
             margin-bottom: 3px;
             border: 2px solid #555;
             padding: 5px;
-            /* overflow-wrap: break-word; */
+            overflow-wrap: break-word;
             overflow-x: hidden;
             overflow-y: auto;
             
@@ -602,6 +651,7 @@ body {
     border-radius: 7px;
     padding: 0px 10px;
     font-size: 14px;
+    font-weight: 600;
 }
 
 .btn-sm {
@@ -704,11 +754,16 @@ body {
         min-height: 221px;
         max-height: 442px;
         /* margin: 10px 0; */
-        border-radius: 7px;
+        
         /* background-color: black; */   /* Why the hell is darkgray LIGHTER than gray?  */
         display: flex;
         justify-content: flex-start;
         flex-wrap: wrap;
+    }
+    #opp-hand > img {
+        width: 159px;
+        height: 221px;
+        border-radius: 7px;
     }
 
 #color-picker {
@@ -768,6 +823,10 @@ body {
 }
 .text-red {
     color: red;
+}
+
+.clickable {
+    cursor: pointer;
 }
 
 .disable-scrollbars::-webkit-scrollbar {
