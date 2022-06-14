@@ -44,6 +44,7 @@
         <input id="card-num" type="text" name="which-card" placeholder="Mana Vault" />
         <button id="search-btn" class="btn-md action-btn">Search</button>
         <button id="surprise-btn" class="btn-md action-btn">Surprise me!</button>
+        <h5>Odds of getting a specific Rare in a pack: 0.885% -- Uncommon: 3.158% -- Common: 12%</h5>
     </div>  
     
      
@@ -176,25 +177,57 @@
             <div id="main-section" >
                 <div id="opp-playarea" >
                     <div id="opp-gy-exile">
+                                        <!-- Opponent's Graveyard -->
                         <div id="opp-graveyard" class="disable-scrollbars" style="display: flex">
-                            Opponent's Graveyard
+                            
                             
                         </div>
+                                        <!-- Opponent's Exile zone -->
                         <div id="opp-exiles" class="disable-scrollbars" style="display: none" >
-                            Opponent's Exile zone
+                            
                         </div>
                 
                         <button id="toggle-opp-gy-exile">Show Exiled</button>
                     </div>
+                                        <!-- Opponent's Mana counters -->
+                    <div id="opp-mana" >
+                        <div class="mana-box">
+                            <img id="opp-c-symbol" class="symbol" src="mana/c.png" width="30px" height="30px" alt="diamond"/>
+                            <span id="opp-c-qty" class="mana-qty">0</span>
+                        </div>
+                        <div class="mana-box"> 
+                            <img id="opp-w-symbol" class="symbol" src="mana/w.png" width="30px" height="30px" alt="sun"/>
+                            <span id="opp-w-qty" class="mana-qty">0</span>
+                        </div>
+                        <div class="mana-box">
+                            <img id="opp-u-symbol" class="symbol" src="mana/u.png" width="30px" height="30px" alt="droplet"/>
+                            <span id="opp-u-qty" class="mana-qty">0</span>
+                        </div>
+                        <div class="mana-box">
+                            <img id="opp-b-symbol" class="symbol" src="mana/b.png" width="30px" height="30px" alt="skull"/>
+                            <span id="opp-b-qty" class="mana-qty">0</span>
+                        </div>
+                        <div class="mana-box">
+                            <img id="opp-r-symbol" class="symbol" src="mana/r.png" width="30px" height="30px" alt="flame"/>
+                            <span id="opp-r-qty" class="mana-qty">0</span>
+                        </div>
+                        <div class="mana-box">
+                            <img id="opp-g-symbol" class="symbol" src="mana/g.png" width="30px" height="30px" alt="tree"/>
+                            <span id="opp-g-qty" class="mana-qty">0</span>
+                        </div>
+                    </div>
         
                     <div id="opp-permanents" >
-                        <div id="opp-lands">
-                            Opp's lands
+                        <!-- Opp's lands -->
+                        <div id="opp-lands" class="disable-scrollbars">
+                                                    
                         </div>
-                        <div id="opp-non-lands">
-                            Opp's non-land perm.
+
+                        <!-- Opp's non-land perm. -->
+                        <div id="opp-non-lands" class="disable-scrollbars">
+                                                
                         </div>
-                        <div id="turn-progress">
+                        <div id="progress-div">
                             <div id="prog-bar"></div>
                         </div>
                     </div>
@@ -216,27 +249,27 @@
                     <div id="my-mana" >
                         <div class="mana-box">
                             <span id="colorless-qty" class="mana-qty">0</span>
-                            <img id="c-symbol" class="symbol" src="mana/c.png" width="35px" height="35px" alt="diamond"/>
+                            <img id="c-symbol" class="symbol clickable" src="mana/c.png" width="35px" height="35px" alt="diamond"/>
                         </div>
                         <div class="mana-box">
                             <span id="white-qty" class="mana-qty">0</span>
-                            <img id="w-symbol" class="symbol" src="mana/w.png" width="35px" height="35px" alt="sun"/>
+                            <img id="w-symbol" class="symbol clickable" src="mana/w.png" width="35px" height="35px" alt="sun"/>
                         </div>
                         <div class="mana-box">
                             <span id="blue-qty" class="mana-qty">0</span>
-                            <img id="u-symbol" class="symbol" src="mana/u.png" width="35px" height="35px" alt="droplet"/>
+                            <img id="u-symbol" class="symbol clickable" src="mana/u.png" width="35px" height="35px" alt="droplet"/>
                         </div>
                         <div class="mana-box">
                             <span id="black-qty" class="mana-qty">0</span>
-                            <img id="b-symbol" class="symbol" src="mana/b.png" width="35px" height="35px" alt="skull"/>
+                            <img id="b-symbol" class="symbol clickable" src="mana/b.png" width="35px" height="35px" alt="skull"/>
                         </div>
                         <div class="mana-box">
                             <span id="red-qty" class="mana-qty">0</span>
-                            <img id="r-symbol" class="symbol" src="mana/r.png" width="35px" height="35px" alt="flame"/>
+                            <img id="r-symbol" class="symbol clickable" src="mana/r.png" width="35px" height="35px" alt="flame"/>
                         </div>
                         <div class="mana-box">
                             <span id="green-qty" class="mana-qty">0</span>
-                            <img id="g-symbol" class="symbol" src="mana/g.png" width="35px" height="35px" alt="tree"/>
+                            <img id="g-symbol" class="symbol clickable" src="mana/g.png" width="35px" height="35px" alt="tree"/>
                         </div>
                     </div>
                 </div>
@@ -261,15 +294,18 @@
                 <div>Time left this round: &nbsp; &nbsp;<div id="round-timer" style="display: inline"> <span id="round-min">49</span>:<span id="round-sec">59</span></div><br>
                 </div>
                 <div id="game-info">
-        
-                    <div id="my-lifepoints" class="life-points">20</div>
+                    <div id="my-info">
+                        <span id="my-lifepoints" class="life-points">20</span>
+                    </div>    
                     <div id="turn-info">
-                        <div><span id="player-name">[player name]</span>'s</div>
+                        <div><span id="whos-turn">?</span></div>
                         <div>Turn # <span id="turn-number">1</span> </div>
                         <div id="turn-phase">...</div>
                     </div>
-                    <div id="opp-lifepoints" class="life-points">20</div> 
-                    
+                    <div id="opp-info">
+                        <span id="opp-lifepoints" class="life-points">20</span> 
+                        <span id="opp-cardsinhand">?</span>
+                    </div>
                     <!-- <div id="info-results-etc">More game info, e.g. results of finished matches this round</div> -->
                 </div>
         
@@ -314,8 +350,9 @@
                     <button id="mana-btn" class="btn-sm action-btn">Mana</button>
                     <button id="view3-btn" class="btn-sm action-btn">Top 3</button>
                     <button id="tutor-btn" class="btn-sm action-btn">Srch Lib</button>
+                    <button id="twister-btn" class="btn-sm action-btn">Twister!</button>
                     <button id="reveal3-btn" class="btn-sm action-btn">Reveal 3</button>
-                    <button id="reveal-btn" class="btn-sm action-btn" data-target="#reveal-modal">Reveal H</button>
+                    <button id="reveal-btn" class="btn-sm action-btn">Reveal H</button>  <!-- What does  data-target="#reveal-modal"  do?  -->
                     <button id="resign-btn" class="btn-sm action-btn">Resign</button>
                 </div>
                 
@@ -348,7 +385,7 @@
                     <div class="modal-content">
                         <!-- <h3 class="modal-header">What would you like to get?</h3> -->
                     
-                        <div id="my-library">     </div>
+                        <div id="my-library" class="disable-scrollbars">     </div>
         
                         <form class="modal-btn-panel" method="dialog">
                             <button class="btn-md action-btn" value="cancel" >Done</button>
@@ -360,7 +397,7 @@
                     <div class="modal-content">
                         <h3 class="modal-header">You're viewing your opponent's hand:</h3>
                     
-                        <div id="opp-hand">     </div>
+                        <div id="opp-hand" class="disable-scrollbars">     </div>
         
                         <form class="modal-btn-panel" method="dialog">
                             <button class="btn-md action-btn" value="cancel">Done</button>
@@ -412,6 +449,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script src="jquery.js"></script>
     <!-- <script src="../node_modules/bootstrap/dist/js/bootstrap.bundle.js"></script> -->
+   
     <script src="app.mjs"></script>
     <!-- <script>import Cookies from '../node_modules/js-cookie/dist/js.cookie.js'</script> -->
     <script src="drafting.js"></script>
