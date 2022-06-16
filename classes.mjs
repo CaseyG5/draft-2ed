@@ -22,7 +22,7 @@ class BasicPlayer {
     addGameResult( gamePoint ) {  // 0, 0.5, or 1  
         this.gamesWonThisRound += gamePoint;  // @TODO: what about draws!
         this.gamesPlayedThisRound++;
-        let wantAnotherGame = false;
+        let wantAnotherGame = false;                    // not needed but kept for clarity
                                             
         if(this.gamesWonThisRound == 2) 
             this.matchPoints += 3;               // match over, this player wins their match
@@ -63,11 +63,18 @@ class BasicPlayer {
 
     calcGWP() {
         if(this.gamesWonTotal == 0) return 0;
-        return this.gamesWonTotal / this.gamesPlayedTotal;    
+        return (this.gamesWonTotal / this.gamesPlayedTotal) * 100;    
+    }
+
+    formatName() {
+        let str = this.name;
+        let spaces = 10 - this.name.length;
+        for( let s = 0; s < spaces; s++) str += " ";
+        return str;
     }
     
     showInfo( lineNum ) {
-        console.log(`${lineNum}) ${this.id}  - ${this.name} - ${this.matchPoints}      - ${this.calcGWP().toFixed(2)}`);
+        return `${lineNum}) ${this.id}     ${this.formatName()}    ${this.matchPoints}         ${this.calcGWP().toFixed(2)}\n`;
     }
 
     randomInt( max ) {
@@ -115,7 +122,7 @@ export default class Tournament {
         }
         this.timer = new Timer(30,0);   // set for 30 min?  (10 min / pack)
         this.currentPack = 1;
-        this.theirPacks = [ [], [] ];
+        this.theirPacks = [ [], [] ];  // @TODO: increase to 8 for 8 players
         this.playersReady = 0;
         this.pairings = [0,0,0,0,0,0,0,0];    // e.g. [4, 6, 3, 2, 0, 7, 1, 5]  after pairings
         //this.results = [0,0,0,0,0,0,0,0]        // index is: player's ID, and value is: games won this match
@@ -124,7 +131,9 @@ export default class Tournament {
         this.endTime;       // Date
     }
 
-    setupDisplay( displayFunc ) {  this.timer.setDisplayFunc( displayFunc );  }
+    // setupDisplay( displayFunc ) {  this.timer.setDisplayFunc( displayFunc );  }
+
+    getPlayer( id ) {  console.log("player " + id + " accessed");  return this.players[id];  }
 
     startDraft() {
         // record start time
@@ -228,21 +237,23 @@ export default class Tournament {
     }
 
     completeRound() {
-        if( !this.timer.timeLeft() ) {
-            // @TODO: if there's NO time left (round timer has ended)...
-        
+        // if( !this.timer.timeLeft() ) {      // @TODO: if there's NO time left (round timer has ended)...
+            // Enforce time limit
             // Are any matches still in progress?
             // then server will handle this with:  if( thisDraft.getNumPlayersReady() < PLAYERS_PER_DRAFT )
             // @TODO:  current turn = Turn 0  for those still playing
             // Result of that game determines match result and
             // @TODO:  NO more games can be requested
-        }
+        // }
 
          // (all matches have finished)
-        else this.timer.stop();     // stop timer
+        // else 
+        
+        this.timer.stop();     // stop timer
+
+        for(let p = 0; p < this.players.length; p++ ) this.players[p].addRoundScore();  // account for results
 
         this.timer.reset(50,0);
-
         this.round++;               // inc round# and proceed to next round         
     }
 
@@ -250,15 +261,19 @@ export default class Tournament {
     endTournament() {
         this.endTime = Date.now();
         // @TODO: what else?
-        this.players.sort( (a, b) =>  a.calcGWP() > b.calcGWP() );
+        this.players.sort( (a, b) =>  b.calcGWP() - a.calcGWP() );
         this.showStandings();
     }
 
     showStandings() {
         // sort this.players by points and stats which determine place
-        console.log(`   id - name     - points - GW % `);
-        for(let p = 0; p < players.length; p++ ) { 
-            players[p].showInfo(p);    
+        let results = `             STANDINGS \n   id -- name        points   -- GW % \n`;
+
+        for(let p = 0; p < this.players.length; p++ ) { 
+            results += this.players[p].showInfo(p);    
         }
+
+        console.log(results);
+        return results;
     }
 }
