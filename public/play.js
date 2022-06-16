@@ -11,7 +11,7 @@ const oppNonLands = document.getElementById('opp-non-lands');
 const oppGraveyard = document.getElementById('opp-graveyard');
 const oppExileZone = document.getElementById('opp-exiles');
 
-// Right side-bar elements                                                      @TODO: FIX triple-time!
+// Right side-bar elements                                                      
 const matchMin = $('#round-min');  // shows minutes remaining       // <span>
 const matchSec = $('#round-sec');  // shows seconds                 // <span>
 const matchTimerDiv = $('#round-timer');    // holds them both
@@ -148,7 +148,7 @@ function addCardToHand( cardNumber ) {
     // cardImage.classList.add('scale-in-hand');
     const newID = newCardID(cardNumber);              // checks allMyCardsInView and returns a unique ID
     cardImage.id = newID;   
-    clog("card " + cardNumber + "is drawn and given id: " + newID);
+    // clog("card " + cardNumber + "is drawn and given id: " + newID);
     //console.log("cards in hand now: " + cardsInHand);
 
     cardImage.draggable = true;
@@ -162,37 +162,39 @@ function addCardToHand( cardNumber ) {
     cardImage.addEventListener( 'dragend', (e) => {
         e.currentTarget.style = "opacity: 1;"; // change cursor type?
         setTimeout( () => {
-            nonLandsArea.style = "border: 0px";     // @TODO:  test style.border = "0px"
-            landsArea.style = "border: 0px";        //  "       "
+            nonLandsArea.style.border = "0";     // @TODO:  test style.border = "0px"
+            landsArea.style.border = "0";        //  "       "
+
+            graveyard.style = "border: 0px";        //  "       "
+            hand.style = "border: 0px";             //  "       "
         },200);
     });
 
-    cardImage.addEventListener( 'dblclick', event => {  // @TODO:  switch to function handleDoubleClick() { }
+    cardImage.addEventListener( 'dblclick', function handleDoubleClick() {
         // if parent element is nonLandArea or landArea...
         if( cardImage.parentElement == landsArea || cardImage.parentElement == nonLandsArea) {
-            if( cardImage.classList.contains('tapped') )
-                cardImage.classList.remove('tapped');
-            else {
-                // tap card if it's a basic land or artifact // later we'll add non-basics/duals
-                // perhaps including how much many card produces when tapped within the card object
-                const cardNumber = Number(cardImage.getAttribute('src').slice(7,10));
-                addManaToPool( cardNumber );
+            const cardNumber = Number(cardImage.getAttribute('src').slice(7,10));       // @TODO: try omitting this and using the cardNumber variable above
 
+            if( cardImage.classList.contains('tapped') ) {
+                cardImage.classList.remove('tapped');
+                clientSocket.emit("cardUntapped", { ourDraftID: myDraftID, ourMatchID: myMatchID, cardNum: cardNumber, cardID: newID } );
+            } 
+            else {
+                addManaToPool( cardNumber );
                 cardImage.classList.add('tapped');
-                
-                if( cardImage.parentElement == landsArea) {
-                    clientSocket.emit("cardTapped", { ourDraftID: myDraftID, ourMatchID: myMatchID, area: "lands", cardNum: cardNumber, cardID: newID } );
-                }
-                else if(cardImage.parentElement == nonLandsArea) {
-                    clientSocket.emit("cardTapped", { ourDraftID: myDraftID, ourMatchID: myMatchID, area: "nonlands", cardNum: cardNumber, cardID: newID } );
-                }
+                // if( cardImage.parentElement == landsArea) {
+                    clientSocket.emit("cardTapped", { ourDraftID: myDraftID, ourMatchID: myMatchID, cardNum: cardNumber, cardID: newID } );
+                // }
+                // else if(cardImage.parentElement == nonLandsArea) {
+                    // clientSocket.emit("cardTapped", { ourDraftID: myDraftID, ourMatchID: myMatchID, area: "nonlands", cardNum: cardNumber, cardID: newID } );
+                // }
             }
         }
     });
 
     // cardImage.addEventListener('drop', event => {   // another card is dropped on this card
         // TEST 1: first step may be to move dropped card (not this card) NEXT to this card
-        // by making it the next sibling (easy with jQuery)
+        // by making it the next sibling (easy with jQuery or Element.after() )  
 
         // place currentSelectedCard (dropped card) behind cardImage (this card) and offset (20, -20) ish
         // but still on manafield / battlefield, whatever zone this card is in, cardImage.parentElement
@@ -203,13 +205,12 @@ function addCardToHand( cardNumber ) {
         // later perhaps: how to handle doubly enchanted/equipped cards
     // });
 
-    // cardImage.addEventListener('auxclick', (e) => { 
-    //     e.preventDefault();      
+    // cardImage.addEventListener('auxclick', (evt) => { 
+    //     evt.preventDefault();      
     //     
     //     // add label to card
     // });
-
-    cardImage.addEventListener('contextmenu', (evt) => {  evt.preventDefault();  });
+    // cardImage.addEventListener('contextmenu', (evt) => {  evt.preventDefault();  });
 
     hand.appendChild(cardImage);
 }
@@ -221,7 +222,7 @@ landsArea.addEventListener( 'dragover', (event) => {
 });
 
 landsArea.addEventListener( 'dragleave', (event) => {
-    landsArea.style = "background: #1e1e1e;";
+    landsArea.style = "background: #151515;";
 });
 
 landsArea.addEventListener( 'drop', event => {
@@ -240,12 +241,12 @@ landsArea.addEventListener( 'drop', event => {
         
         document.cookie = `cardsinhand=${cardsInHand}`;     
         document.cookie = `landsinplay=${landsInPlay}`;
-        clog("you played a card --> Lands");
+        clog("you played a land");
         // numCardsInPlay++;
         landsArea.style = "border: 2px solid yellowgreen";
     }
 });
-                                        // @TODO: ACCOUNT for cards PLAYED and HAND array!
+                                        
 // Non-Land Area event listeners
 nonLandsArea.addEventListener( 'dragover', (event) => {
     event.preventDefault();
@@ -253,30 +254,38 @@ nonLandsArea.addEventListener( 'dragover', (event) => {
 });
 
 nonLandsArea.addEventListener( 'dragleave', (event) => {
-    nonLandsArea.style = "background: #1e1e1e;";
+    nonLandsArea.style = "background: #151515;";
 });
 
 nonLandsArea.addEventListener( 'drop', event => {
-    if(currentSelectedCard.parentElement != nonLandsArea && currentSelectedCard.parentElement != landsArea) {     // no effect for drop in place
-        
-        const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
-        console.log("card # of card dropped into non-Lands area is: " + cardNumber);
+    if(currentSelectedCard.parentElement == nonLandsArea || currentSelectedCard.parentElement == landsArea) {     // no effect for drop in place
+        return;
+    }
 
+    const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
+    console.log("card # of card dropped into non-Lands area is: " + cardNumber);
+    const currentID = currentSelectedCard.id;  
+
+    if(currentSelectedCard.parentElement == hand) {
         let index = cardsInHand.indexOf( cardNumber, 0);
         cardsInHand.splice( index, 1 );
-        nonLandsInPlay.push(cardNumber);
-
-        document.cookie = `cardsinhand=${cardsInHand}`;     
-        document.cookie = `nonlandsinplay=${nonLandsInPlay}`;
-
-        const currentID = currentSelectedCard.id;   
-        nonLandsArea.appendChild(currentSelectedCard);
+        document.cookie = `cardsinhand=${cardsInHand}`;
         clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "nonlands", cardNum: cardNumber, cardID: currentID });        // enable for live testing
-        
-        clog("you played a card --> Non-Lands");
-        // numCardsInPlay++;
-        nonLandsArea.style = "border: 2px solid yellowgreen";
+        clog("you played a non-land");
     }
+    else if(currentSelectedCard.parentElement == graveyard) {
+        let index = cardsInGY.indexOf( cardNumber, 0);
+        cardsInGY.splice( index, 1 );
+        document.cookie = `cardsinyard=${cardsInHand}`;
+        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "graveyard", destArea: "nonlands", cardNum: cardNumber, cardID: currentID });        // enable for live testing
+        clog("you moved a card from graveyard to battlefield");
+    }
+    
+    nonLandsInPlay.push(cardNumber);
+    document.cookie = `nonlandsinplay=${nonLandsInPlay}`;
+    nonLandsArea.appendChild(currentSelectedCard);
+
+    nonLandsArea.style = "border: 2px solid yellowgreen";
 });
 
 
@@ -287,55 +296,56 @@ graveyard.addEventListener( 'dragover', (event) => {
 });
 
 graveyard.addEventListener( 'dragleave', (event) => {
-    graveyard.setAttribute('style', "background: #1e1e1e"); 
+    graveyard.setAttribute('style', "background: #151515"); 
 });
 
 graveyard.addEventListener( 'drop', event => {
-    currentSelectedCard.draggable = false;
+    // currentSelectedCard.draggable = false;     
+    if(currentSelectedCard.parentElement != graveyard) { 
     
-    const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
-    // let index = -1;
-    console.log("card # of card dropped into GY area is: " + cardNumber);
-    currentSelectedCard.classList.remove('tapped');     // prevent card being in GY tapped
+        const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
+        const itsID = currentSelectedCard.id;
+        console.log("card # of card dropped into GY area is: " + cardNumber);
+        currentSelectedCard.classList.remove('tapped');     // prevent card being in GY tapped
 
-    if(currentSelectedCard.parentElement == hand) {
-        console.log("hand array has length " + cardsInHand.length);
-        // index = cardsInHand.indexOf( cardNumber, 0);   
-        cardsInHand.splice( cardsInHand.indexOf( cardNumber, 0), 1 );
-        // console.log("index of card removed from hand: " + index);
+        if(currentSelectedCard.parentElement == hand) {
+            console.log("hand array has length " + cardsInHand.length);
+            // index = cardsInHand.indexOf( cardNumber, 0);   
+            cardsInHand.splice( cardsInHand.indexOf( cardNumber, 0), 1 );
+            // console.log("index of card removed from hand: " + index);
 
-        document.cookie = `cardsinhand=${cardsInHand}`;
-        const currentID = currentSelectedCard.id;
-        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "graveyard", cardNum: cardNumber, cardID: currentID });      // enable for live testing       
-        clog("you played a card --> Graveyard");     
-    } 
-    else if(currentSelectedCard.parentElement == nonLandsArea) {
-        console.log("nonlands array has length " + nonLandsInPlay.length);
-        // index = nonLandsInPlay.indexOf( cardNumber, 0);
-        nonLandsInPlay.splice( nonLandsInPlay.indexOf( cardNumber, 0), 1 ); 
-        // console.log("index of card removed from nonlands: " + index);
+            document.cookie = `cardsinhand=${cardsInHand}`;
+            
+            clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "hand", destArea: "graveyard", cardNum: cardNumber, cardID: itsID });      // enable for live testing       
+            clog("you played a card to graveyard");     
+        } 
+        else if(currentSelectedCard.parentElement == nonLandsArea) {
+            console.log("nonlands array has length " + nonLandsInPlay.length);
+            // index = nonLandsInPlay.indexOf( cardNumber, 0);
+            nonLandsInPlay.splice( nonLandsInPlay.indexOf( cardNumber, 0), 1 ); 
+            // console.log("index of card removed from nonlands: " + index);
+            
+            document.cookie = `nonlands=${nonLandsInPlay}`;
         
-        document.cookie = `nonlands=${nonLandsInPlay}`;
-       
-        const currentID = currentSelectedCard.id;
-        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "graveyard", cardNum: cardNumber, cardID: currentID });  // enable for live testing
-        clog("you moved a non-land --> Graveyard");  
-    }
-    else { // lands --> graveyard
-        console.log("lands array has length " + landsInPlay.length); 
-        // index = landsInPlay.indexOf( cardNumber, 0);
-        landsInPlay.splice( landsInPlay.indexOf( cardNumber, 0), 1 );
-        // console.log("index of card removed from lands: " + index);
+            
+            clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "graveyard", cardNum: cardNumber, cardID: itsID });  // enable for live testing
+            clog("you moved a non-land to graveyard");  
+        }
+        else { // lands --> graveyard
+            console.log("lands array has length " + landsInPlay.length); 
+            landsInPlay.splice( landsInPlay.indexOf( cardNumber, 0), 1 );
+        
+            document.cookie = `lands=${landsInPlay}`;
+            
+            clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "lands", destArea: "graveyard", cardNum: cardNumber, cardID: itsID });  // enable for live testing
+            clog("you moved a land to graveyard");  
+        }
+        graveyard.appendChild(currentSelectedCard);
+        cardsInGY.push(cardNumber);
 
-        document.cookie = `lands=${landsInPlay}`;
-        const currentID = currentSelectedCard.id;
-        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "lands", destArea: "graveyard", cardNum: cardNumber, cardID: currentID });  // enable for live testing
-        clog("you moveded a land --> Graveyard");  
+        document.cookie = `cardsinyard=${cardsInGY}`;
+        graveyard.style.backgroundColor = "#151515";
     }
-    graveyard.appendChild(currentSelectedCard);
-    cardsInGY.push(cardNumber);
-    // numCardsInGY++;
-    document.cookie = `cardsinyard=${cardsInGY}`;   // @TODO: update cardsInGY et al.
 });
 
 // Exile zone event listeners
@@ -350,17 +360,20 @@ exileZone.addEventListener( 'dragleave', (event) => {
 
 exileZone.addEventListener( 'drop', event => {
     currentSelectedCard.draggable = false;
-    // currentSelectedCard.classList.remove('scale-in-hand', 'scale-on-battlefield');
+    currentSelectedCard.classList.remove('tapped');     // prevent card being exiled tapped
     const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
     let index = nonLandsInPlay.indexOf( cardNumber, 0);
-    nonLandsInPlay.splice( index, 1 );                  // assume for now that target card is/was a non-land perm on the battlefield
+            // assume for now that target card is/was a non-land perm on the battlefield
+    nonLandsInPlay.splice( index, 1 );                  
+    document.cookie = `nonlands=${nonLandsInPlay}`;
     document.cookie = `cardsinexile=${cardsInExile}`;
     exileZone.appendChild(currentSelectedCard);
     cardsInExile.push(cardNumber);
 
     const currentID = currentSelectedCard.id;
     clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "exile", cardNum: cardNumber, cardID: currentID });      // enable for live testing
-    clog("you moved a card --> Exile");
+    clog("you exiled a card");
+    exileZone.style.backgroundColor = "#151515";
 });
 
 //
@@ -378,6 +391,43 @@ const handleToggleGraveyardExile = (gyDiv, exDiv, evt) => {
     }
 };
 
+// Graveyard event listeners
+hand.addEventListener( 'dragover', (event) => {
+    event.preventDefault();
+    hand.setAttribute('style', "background: #444");
+});
+
+hand.addEventListener( 'dragleave', (event) => {
+    hand.setAttribute('style', "background: #1e1e1e"); 
+});
+
+hand.addEventListener( 'drop', event => { 
+    if(currentSelectedCard.parentElement == hand || currentSelectedCard.parentElement == landsArea) return;
+    // (may not drop in place or drop into hand from lands -- only GY to hand or NL to hand)
+
+    const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );
+    const itsID = currentSelectedCard.id;
+
+    if(currentSelectedCard.parentElem == nonLandsArea) {
+        nonLandsInPlay.splice( nonLandsInPlay.indexOf(cardNumber, 0), 1 );  // update NL array
+        document.cookie = `nonlands=${nonLandsInPlay}`;                     // update cookies
+        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "nonlands", destArea: "hand", cardNum: cardNumber, cardID: itsID });      // enable for live testing 
+        console.log("card dropped into hand from non-lands");
+        clog("you moved a card from non-lands to hand");
+    }
+    else {      // coming from graveyard
+        cardsInGY.splice( cardsInGY.indexOf(cardNumber, 0), 1 );            // update GY array
+        document.cookie = `cardsinyard=${cardsInGY}`;
+        clientSocket.emit("cardMoved", { ourDraftID: myDraftID, ourMatchID: myMatchID, srcArea: "graveyard", destArea: "hand", cardNum: cardNumber, cardID: itsID });      // enable for live testing       
+        console.log("card dropped into hand from graveyard");
+        clog("you moved a card from graveyard back to hand");
+    }
+    
+    cardsInHand.push(cardNumber);                                           // update Hand array
+    hand.appendChild(currentSelectedCard);                                  // move element to new container
+    document.cookie = `cardsinhand=${cardsInHand}`;                         
+});
+
 // Button to Toggle display of MY Graveyard and Exile zones
 document.getElementById('toggle-gy-exile').addEventListener( 'click', event => handleToggleGraveyardExile(graveyard, exileZone, event) );
 
@@ -391,7 +441,7 @@ function clog(msg) {
     const msgElem = document.createElement('span');       
     // nameElem.classList.add('my-chat-name');                
     // nameElem.textContent = `${myName}:`;        // OR...  = "username:"  for local testing        
-    msgElem.innerText =  `>>> ${msg}\n`;            // @TODO: just append string instead of any HTML element?
+    msgElem.innerText =  `> ${msg}\n`;            // @TODO: just append string instead of any HTML element?
     //chatLog.appendChild(nameElem);
     chatLog.appendChild(msgElem);
     chatLog.scrollTo(0,100000);
@@ -573,22 +623,22 @@ const handleSearchLib = () => {
 };
 
 const timeTwister = () => {
-    const numCardsHad = cardsInHand.length;
-    const numCardsInGY = cardsInGY.length;
-    for(let c = 0; c < numCardsHad; c++) {
+    const numCardsHad = cardsInHand.length;             // # of cards in hand beforehand
+    const numCardsInGY = cardsInGY.length;              // # of cards in GY
+    for(let c = 0; c < numCardsHad; c++) {              // put all cards in hand onto library
         cardsInLibrary.push( cardsInHand.pop() );
         let id = hand.lastChild.id;
         allMyCardsInView.splice( allMyCardsInView.indexOf(id, 0), 1);
         hand.removeChild(hand.lastChild);   // @TODO:  what about event listeners??                    
     }
-    for(let g = 0; g < numCardsInGY; g++) {
+    for(let g = 0; g < numCardsInGY; g++) {             // put all cards in graveyard onto library
         cardsInLibrary.push( cardsInGY.pop() );
         let id = graveyard.lastChild.id;
         allMyCardsInView.splice( allMyCardsInView.indexOf(id, 0), 1);
         graveyard.removeChild(graveyard.lastChild);     // removes element from page (and with it, its ID);
     }
     shuffleDeck();
-    for(let i = 0; i < 7; i++) addCardToHand( cardsInLibrary.pop() );
+    for(let i = 0; i < 7; i++) addCardToHand( cardsInLibrary.pop() );       // draw 7
     clientSocket.emit("graveyardToLibrary", { ourDraftID: myDraftID, ourMatchID: myMatchID, numCards: numCardsInGY } );
     notifyOpponent("shuffles their hand & GY into their library and draws 7");
     clog("You cast Timetwister");
@@ -784,8 +834,6 @@ resignBtn.addEventListener('click', () => {
 
 // Mana quantity adjustments
 document.getElementById('c-symbol').addEventListener( 'click', (evt) => {
-    // @TODO: Refactor idea for fewer IF statements overall:
-    // if(altPressed == true) decrement quantity... else increment
     adjustQuantity(colorless, 'c');   // change qty of colorless mana
 });
 
@@ -831,38 +879,31 @@ window.addEventListener( 'keydown', keyEvent => {
     }                                
 });
 
-// Adjust of quantity of MANA element passed in            // @TODO: Refactor this, see above
-function adjustQuantity(textElem, iconLetter) {
-    // get current quantity
-    let prevQty = Number( textElem.textContent );
-    let currentQty = Number( textElem.textContent );
-       
-    // if Alt key is down...
-    if(altPressed) {
-        if(currentQty > 0) currentQty--;    // if quantity > 0, decrement quantity
+function incQuantity(numElem, letter) { 
+    numElem.textContent++;
+    if( numElem.style.color != getColor(letter) ) {            // color not already applied...
+        document.getElementById(`${letter}-symbol`).src = `mana/${letter}-active.png`;
+        document.getElementById(`${letter}-symbol`).classList.add('halo');
+        numElem.style.color = getColor(letter);
     }
-    else {
-        currentQty++;       // otherwise, increment quantity
-    }
-    // render updated value
-    textElem.textContent = `${currentQty}`;
-
-    if(iconLetter) {
-        // remove or add halo
-        if(textElem.textContent == "0") {
-            document.getElementById(`${iconLetter}-symbol`).classList.remove('halo'); // needed otherwise JS doesn't think it has a classList
-            document.getElementById(`${iconLetter}-symbol`).src = `mana/${iconLetter}.png`;
-            textElem.style.color = "lightgray";
+    
+}
+function decQuantity(numElem, letter) {
+    if(numElem.textContent > "0") {
+        numElem.textContent--;    // if quantity > 0, decrement quantity
+        if(numElem.textContent == "0") {                            // if quantity is zero
+            document.getElementById(`${letter}-symbol`).classList.remove('halo'); // needed otherwise JS doesn't think it has a classList
+            document.getElementById(`${letter}-symbol`).src = `mana/${letter}.png`;
+            numElem.style.color = "lightgray";
         }
-        else if(currentQty > prevQty) {
-            document.getElementById(`${iconLetter}-symbol`).src = `mana/${iconLetter}-active.png`;
-            document.getElementById(`${iconLetter}-symbol`).classList.add('halo');
-            textElem.style.color = getColor(iconLetter);
-        }   
     }
 }
+function adjustQuantity(numElem, letter) {
+    if(altPressed) decQuantity(numElem, letter);
+    else incQuantity(numElem, letter);
+}
 
-function addOneMana( letter ) {
+function addOneMana( letter ) {     // @TODO: add number as an argument so we don't have to reset src & class
     switch(letter) {                        // can use ++ instead of = `${Number( white.textContent ) + 1}`
         case 'w':
             white.textContent++;                                        // increase white mana
@@ -893,29 +934,22 @@ function addOneMana( letter ) {
             green.style.color = "rgb(64, 255, 47)";
             tree.src = 'mana/g-active.png';
             tree.classList.add('halo');
-    }
-    clientSocket.emit("manaAdded", { ourDraftID: myDraftID, ourMatchID: myMatchID, color: letter } );
-}
-
-function addManaToPool( cardNumber ) {
-    if( cardNumber > 896)       addOneMana('w');                                        // BASIC LANDS                
-    else if( cardNumber > 893)  addOneMana('u');            
-    else if( cardNumber > 890)  addOneMana('r');
-    else if( cardNumber > 887)  addOneMana('g');                
-    else if( cardNumber > 877)  colorPicker.showModal();                                // DUALS
-    else if( cardNumber > 874)  addOneMana('b');                // && cardNumber < 878  // BASIC SWAMP
-    else if( cardNumber < 638)  tapArtifactForMana(cardNumber);                         // ARTIFACT MANA 
-}
-
-function tapArtifactForMana( cardNumber ) {
-    switch(cardNumber) {
-        case 599:
-        case 627:
-            colorless.textContent++;  colorless.textContent++;  colorless.textContent++;   
-            // Basalt Monolith or Mana Vault - increase colorless mana
+            break;
+        case 'c':
+            colorless.textContent++;                                    // inc colorless mana
             colorless.style.color = "white";
             square.src = 'mana/c-active.png';
             square.classList.add('halo');
+    }                                                            // @TODO: then pass the quantity here too
+    clientSocket.emit("manaAdded", { ourDraftID: myDraftID, ourMatchID: myMatchID, color: letter } );
+}
+
+
+function tapArtifactForMana( cardNumber ) {
+    switch(cardNumber) {
+        case 599:                       // Basalt Monolith 
+        case 627:                       // or Mana Vault - increase colorless mana
+            addOneMana('c');  addOneMana('c');  addOneMana('c');
             break;
         case 600:
             manaFromLotus = true;
@@ -937,18 +971,25 @@ function tapArtifactForMana( cardNumber ) {
             addOneMana('u');          // sapphire - inc blue mana
             break;
         case 637:
-            colorless.textContent++;  colorless.textContent++;      // Sol Ring
-            colorless.style.color = "white";
-            square.src = 'mana/c-active.png';
-            square.classList.add('halo');
+            addOneMana('c');  addOneMana('c');      // Sol Ring   
     }
 }
 
-function resetQuantity(numElem1, numElem2, iconLetter) {          // @TODO:  how to convince JS the params are the type claimed?
-    numElem1.textContent = "0";
-    numElem1.style.color = "lightgray";
-    numElem2.textContent = "0";
-    numElem2.style.color = "lightgray";
+function addManaToPool( cardNumber ) {
+    if( cardNumber > 896)       addOneMana('w');                                        // BASIC LANDS                
+    else if( cardNumber > 893)  addOneMana('u');            
+    else if( cardNumber > 890)  addOneMana('r');
+    else if( cardNumber > 887)  addOneMana('g');                
+    else if( cardNumber > 877)  manaFromDual(cardNumber);                               // DUALS           
+    else if( cardNumber > 874)  addOneMana('b');                // && cardNumber < 878  // BASIC SWAMP
+    else if( cardNumber < 638)  tapArtifactForMana(cardNumber);                         // ARTIFACT MANA 
+}
+
+function resetQuantity(myManaElem, oppManaElem, iconLetter) {          // @TODO:  how to convince JS the params are the type claimed?
+    myManaElem.textContent = "0";
+    myManaElem.style.color = "lightgray";
+    oppManaElem.textContent = "0";
+    oppManaElem.style.color = "lightgray";
     document.getElementById(`${iconLetter}-symbol`).src = `mana/${iconLetter}.png`;
     document.getElementById(`${iconLetter}-symbol`).classList.remove('halo');   // doc.gebi() needed otherwise JS doesn't think it has a classList
     document.getElementById(`opp-${iconLetter}-symbol`).src = `mana/${iconLetter}.png`;
@@ -976,11 +1017,89 @@ function getColor( char ) {
         case 'b':  return "purple";
         case 'r':  return "red";
         case 'g':  return "rgb(64, 255, 47)";
+        case 'c':  return "white";
     }
 }
 
 function clearChildImages( parentElem ) {
     while(parentElem.lastChild) parentElem.removeChild(parentElem.lastChild);
+}
+
+////////////////////// RESET functions for the next game ///////////////////////
+
+function emptyZones() {                 // could be problematic if event listeners persist
+    clearChildImages( hand );
+    clearChildImages( landsArea );
+    clearChildImages( nonLandsArea );
+    clearChildImages( graveyard );
+    clearChildImages( exileZone );
+    clearChildImages( oppLands );
+    clearChildImages( oppNonLands );
+    clearChildImages( oppGraveyard );
+    clearChildImages( oppExileZone );
+
+    cardsInHand.length = 0;             // versus = [] ?
+    landsInPlay.length = 0;
+    nonLandsInPlay.length = 0
+    cardsInGY.length = 0;
+    cardsInExile.length = 0;
+    allMyCardsInView.length = 0;
+
+    oppNumCardsInHand = 0;
+    oppLandsInPlay.length = 0;
+    oppNonLandsInPlay.length = 0;
+    oppCardsInGY.length = 0;          
+    oppCardsInExile.length = 0;
+    oppAllCardsInView.length = 0;
+    
+}
+function resetTable() {
+    emptyZones();
+
+    myLifePoints.textContent = "20";                    // life totals = 20
+    oppLifePoints.textContent = "20";
+    document.cookie = "mylife=20";  document.cookie = "opplife=20";
+
+    turnNum.textContent = "1";                          // reset turn # to 1
+    document.cookie = "turn=1";
+
+    updatePhase(0);                                 // empties mana pool
+    nextPhaseBtn.setAttribute('disabled', true);
+
+    myRollValue = 0;
+    oppRollValue = 0;
+    iPlayFirst = false;                 // first assume opponent may go first
+    myTurn = false;
+    activePlayerName.textContent = "roll ?";
+    oppHandCount.textContent = "0";
+    rollBtn.hidden = false;             // need to roll if last game was a draw
+
+}
+
+function prepareNextGame(whoPlaysFirst) {
+    resetTable(); 
+
+    document.cookie = `gamenumber=${++gameNumber}`;   // inc game # and...      
+//        @TODO: score
+    if(whoPlaysFirst == myPlayerID) {           // who plays first depends on who lost
+        iPlayFirst = true;                          // I go first
+        myTurn = true;
+        barPosAsPerc = 37.5;                        // So player will advance right to 1st main phase
+        nextPhaseBtn.setAttribute('disabled', false);
+        activePlayerName.textContent = "MY";
+    }
+    else if(whoPlaysFirst == myOpponentID) {
+        activePlayerName.textContent = "THEIR";
+    }    
+    reloadDeck();
+}
+
+function reloadDeck() {
+    cardsInLibrary.length = 0;          // .length = 0 better/faster than while-not-empty-pop
+    cardsInLibrary = myDeck.slice();        
+    shuffleDeck();
+    mullBtn.hidden = false;      // show mulligan button again
+    keepBtn.hidden = false;      // show keep button too
 }
 
 //////////////////////// Socket Game Event Listeners //////////////////////////
@@ -1070,9 +1189,13 @@ clientSocket.on("mulligans", () => {
 });
 
 clientSocket.on("cardTapped", (data) => {  // area, cardNum, cardID 
-    console.log("card tapped event received:  " + data.cardID + " in zone " + data.area);
-    const oppCard = document.getElementById(`${data.cardID}`);
-    oppCard.classList.replace('opp-untapped', 'opp-tapped');
+    //console.log("card tapped event received:  " + data.cardID + " in zone " + data.area);
+
+    let oppCard = document.getElementById(`${data.cardID}`);
+
+    console.log("before tapped: " + oppCard);
+    oppCard.classList.replace("opp-untapped", "opp-tapped");
+    console.log("after tapped: " + oppCard);
     // if(data.area == "lands") {    }                          // for anything special later
     // else if (data.area == "nonlands") {    }       
 });
@@ -1108,12 +1231,22 @@ clientSocket.on("manaAdded", (data) => {        // take note of opponent's mana 
             oppGreen.style.color = getColor(data.color);
             oppTree.src = 'mana/g-active.png';
             oppTree.classList.add('halo');
+            break;
+        case 'c':
+            oppColorless.textContent++;                                    // inc colorless mana
+            oppColorless.style.color = "white";
+            oppSquare.src = 'mana/c-active.png';
+            oppSquare.classList.add('halo');
     }
 });
 
+clientSocket.on("cardTapped", (data) => { // cardNum: cardNumber, cardID: newID } );
+    document.getElementById(`${data.cardID}`).classList.replace("opp-tapped", "opp-untapped");
+});
+
 clientSocket.on("phaseUpdate", (data) => {   // phaseValue
-    updatePhase(data.phaseValue);                                 // @TODO: Use handleUpdatePhase instead
-});                                              // OTHERWISE our prog bar will not move when opponent moves to next phase
+    updatePhase(data.phaseValue);                                 
+});                                            
 
 clientSocket.on("lifePoints", (data) => {  //  lifeTotal 
     oppLifePoints.textContent = data.lifeTotal;
@@ -1146,24 +1279,27 @@ clientSocket.on("cardMoved", (data) => {       // Take area(s), card (#) and car
         oppCard.src = `images/${data.cardNum}.jpeg`;
         oppCard.id = data.cardID;
 
-        if(data.destArea == "lands") {
-            clog("opponent plays a card --> Lands");
+        if(data.destArea == "lands") {                              // hand --> lands
+            clog("opponent plays a land");                          
             oppCard.classList.add('opp-untapped');
             oppLandsInPlay.push(data.cardNum);           // push to array of lands (card #s)
             oppLands.appendChild(oppCard);          // add opponent's newly played card to our display
         } 
-        else if(data.destArea == "nonlands") {
-            clog("opponent plays a card --> Non-Lands");
+        else if(data.destArea == "nonlands") {                      // hand --> non-lands
+            clog("opponent plays a non-land");
             oppCard.classList.add('opp-untapped');
             oppNonLandsInPlay.push(data.cardNum);  
             oppNonLands.appendChild(oppCard);
         } 
-        else if(data.destArea == "graveyard") {
-            clog("opponent plays a card --> Graveyard");
+        else if(data.destArea == "graveyard") {                     // hand --> graveyard
+            clog("opponent puts a card in their graveyard");
             oppCardsInGY.push(data.cardNum);
             oppGraveyard.appendChild(oppCard);
+
+            // console.log("there are " + oppCardsInGY.length + " cards in opp's GY");
+            // console.log("opponent's GY DIV contains " + oppGraveyard.childElementCount + " items");
         } 
-        // else if(data.destArea == "exile") {
+        // else if(data.destArea == "exile") {                      // hand --> exile
         //     oppCardsInExile.push(data.cardNum);
         //     oppExileZone.appendChild(oppCard);
         // }
@@ -1174,19 +1310,52 @@ clientSocket.on("cardMoved", (data) => {       // Take area(s), card (#) and car
     else if(data.destArea == "graveyard") {
         const oppCard = document.getElementById(`${data.cardID}`);
         
-        if(data.srcArea == "nonlands") {            // remove specified card from oppNonLandsInPlay
-            oppNonLandsInPlay.splice( oppNonLandsInPlay.indexOf( data.cardNum, 0), 1);      // both model/data rep                                                                                 
-            clog("opponent moves a non-land --> Graveyard");
+        if(data.srcArea == "nonlands") {                            // non-land --> graveyard       
+            oppNonLandsInPlay.splice( oppNonLandsInPlay.indexOf( data.cardNum, 0), 1);      // remove specified card from oppNonLandsInPlay                                                                                 
+            clog("opponent moves a non-land to graveyard");                                 // both model/data rep
         }
-        else if(data.srcArea == "lands") {          // remove card from oppLandsInPlay
-            oppLandsInPlay.splice( oppLandsInPlay.indexOf( data.cardNum, 0), 1 ); 
-            clog("opponent moves a land --> Graveyard");
+        else if(data.srcArea == "lands") {                          // land --> graveyard                        
+            oppLandsInPlay.splice( oppLandsInPlay.indexOf( data.cardNum, 0), 1 );           // remove card from oppLandsInPlay
+            clog("opponent moves a land to graveyard");
         }
         oppCardsInGY.push(data.cardNum);            // and add it to graveyard array
         oppCard.classList.remove('opp-tapped', 'opp-untapped');                                             // and view/object
         oppGraveyard.appendChild(oppCard);          // move card to oppGraveyard
+
+        // console.log("there are " + oppCardsInGY.length + " cards in opp's GY");
+        // console.log("opponent's GY DIV contains " + oppGraveyard.childElementCount + " items");
     } 
-    else if(data.destArea == "exile") clog("opponent exiles a card"); 
+    else if(data.destArea == "hand") {
+        const oppCard = document.getElementById(`${data.cardID}`);
+
+        if(data.srcArea == "nonlands") {                            // non-land --> hand
+            oppNonLandsInPlay.splice( oppNonLandsInPlay.indexOf( data.cardNum, 0), 1);  // remove card from non-lands
+            oppNonLands.removeChild(oppCard);                                           // remove element from play
+            clog("opponent moves a card from battlefield back to hand");
+        }
+        else {  // data.srcArea == "graveyard"                      // graveyard --> hand
+            oppCardsInGY.splice( oppCardsInGY.indexOf( data.cardNum, 0), 1);            // remove card from graveyard
+            oppGraveyard.removeChild(oppCard);                                          // remove element from play
+            clog("opponent moves a card from graveyard back to hand");
+        }
+        allMyCardsInView.splice( allMyCardsInView.indexOf( data.cardID, 0), 1);         // remove card from list of all
+        oppNumCardsInHand++;
+        oppHandCount.textContent = oppNumCardsInHand;
+    }
+
+    else if(data.destArea == "exile") {
+        const oppCard = document.getElementById(`${data.cardID}`);
+        if(data.srcArea == "nonlands") {            // remove specified card from oppNonLandsInPlay
+            oppNonLandsInPlay.splice( oppNonLandsInPlay.indexOf( data.cardNum, 0), 1);      // both model/data rep                                                                                 
+            clog("opponent moves a card from battlefield to exile");
+        }
+        // else if from lands
+        // else if from hand
+        oppCardsInExile.push(data.cardNum);            // and add it to graveyard array
+        oppCard.classList.remove('opp-tapped', 'opp-untapped');                                             // and view/object
+        oppExileZone.appendChild(oppCard);          // move card to oppGraveyard
+        clog("opponent exiles a card");
+    }
 });
 
 clientSocket.on("graveyardToLibrary", (data) => {
@@ -1197,6 +1366,7 @@ clientSocket.on("graveyardToLibrary", (data) => {
     for(let g = 0; g < data.numCards; g++) {
         let id = oppGraveyard.lastChild.id;
         allMyCardsInView.splice( allMyCardsInView.indexOf(id, 0), 1);   // remove card ID from list
+        oppCardsInGY.pop();                                             // remove card # from sublist
         oppGraveyard.removeChild(oppGraveyard.lastChild);               // remove element from page
     }
 } );
@@ -1236,7 +1406,6 @@ clientSocket.on("handRevealed", (data) => {          // data.hand is their array
     for(let c = 0; c < data.hand.length; c++) {
         let cImg = document.createElement('img');
         cImg.setAttribute('src', `images/${data.hand[c]}.jpeg`);
-        cImg.classList.add('rounded-sm');                           // @TODO: Move to STYLE SHEET
         oppHand.appendChild(cImg);
     }
     document.getElementById('reveal-modal').showModal();
