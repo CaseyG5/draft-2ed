@@ -16,6 +16,7 @@ const matchMin = $('#round-min');  // shows minutes remaining       // <span>
 const matchSec = $('#round-sec');  // shows seconds                 // <span>
 const matchTimerDiv = $('#round-timer');    // holds them both
 
+const gameNo = document.getElementById('game-number');              // <span>
 const activePlayerName = document.getElementById('whos-turn');      // <span>
 const turnNum = document.getElementById('turn-number');             // <span>
 const turnPhase = document.getElementById('turn-phase');            // <div>
@@ -148,7 +149,7 @@ function addCardToHand( cardNumber ) {
     // cardImage.classList.add('scale-in-hand');
     const newID = newCardID(cardNumber);              // checks allMyCardsInView and returns a unique ID
     cardImage.id = newID;   
-    // clog("card " + cardNumber + "is drawn and given id: " + newID);
+    clog("a card is drawn and given id: " + newID);
     //console.log("cards in hand now: " + cardsInHand);
 
     cardImage.draggable = true;
@@ -156,14 +157,14 @@ function addCardToHand( cardNumber ) {
     // Event listeners for newly added/drawn card
     cardImage.addEventListener( 'dragstart', (e) => {   
         currentSelectedCard = e.currentTarget;                          // should be a ref to cardImage
-        currentSelectedCard.style = "opacity: 0.3; cursor: grabbing; border-radius: 10px";
+        currentSelectedCard.setAttribute('style',"cursor: grabbing; border-radius: 10px");  //opacity: 0.1; 
     });
 
     cardImage.addEventListener( 'dragend', (e) => {
         e.currentTarget.style = "opacity: 1;"; // change cursor type?
         setTimeout( () => {
-            nonLandsArea.style.border = "0";     // @TODO:  test style.border = "0px"
-            landsArea.style.border = "0";        //  "       "
+            nonLandsArea.style.border = "none";     // @TODO:  test style.border = "0px"
+            landsArea.style.border = "none";        //  "       "
 
             graveyard.style = "border: 0px";        //  "       "
             hand.style = "border: 0px";             //  "       "
@@ -224,8 +225,9 @@ landsArea.addEventListener( 'dragover', (event) => {
 landsArea.addEventListener( 'dragleave', (event) => {
     landsArea.style = "background: #151515;";
 });
-
+                                                    // @TODO: Test event.preventDefault() for 'drop' event
 landsArea.addEventListener( 'drop', event => {
+    event.preventDefault();
     if(currentSelectedCard.parentElement != landsArea && currentSelectedCard.parentElement != nonLandsArea) {     // drop in place (no movement) has no effect
 
         const cardNumber = Number(currentSelectedCard.getAttribute('src').slice(7,10) );  // let cardNum = currentSelectedCard.src.slice(7,10); did NOT work
@@ -612,6 +614,7 @@ const handleSearchLib = () => {
                 clog("and move a card to hand");
                 addCardToHand( cardToGet );                                        // and add it to hand
                 setTimeout( () => {  tutorModal.close();  }, 1300);
+                console.log("this inside evt handler: " + this);    // ?
                 // @TODO:  Test...  cImg.removeEventListener(this);
             })
             rowX.appendChild(cImg);
@@ -641,72 +644,99 @@ const timeTwister = () => {
     for(let i = 0; i < 7; i++) addCardToHand( cardsInLibrary.pop() );       // draw 7
     clientSocket.emit("graveyardToLibrary", { ourDraftID: myDraftID, ourMatchID: myMatchID, numCards: numCardsInGY } );
     notifyOpponent("shuffles their hand & GY into their library and draws 7");
+    clientSocket.emit("cardsDrawn", { ourDraftID: myDraftID, ourMatchID: myMatchID, numDrawn: 7 } ); // enable for live testing
     clog("You cast Timetwister");
 };
 
 // HANDLER function for "View Top 3" button click
 const handleViewTop3 = (oppTopCards) => {
     threeCardDiv.innerHTML = "";
+    let topCards = [];
     let selectedCard;
-
-    if(oppTopCards.length > 0) {
-        for( let c = 0; c < oppTopCards.length; c++) {
-            let nextImg = new Image();                                 // quicker than document.createElement('img') ?
-            nextImg.src = `images/${oppTopCards[c]}.jpeg`;   //.setAttribute('src', `images/${oppTopCards[c]}.jpeg`); not working?
-            nextImg.classList.add('rounded');
-            nextImg.setAttribute('draggable', true);
-            nextImg.addEventListener( 'dragstart', (evt) => {
-                selectedCard = evt.currentTarget;                           
-                // allow them to drag to reorder
-                
-            });
-            threeCardDiv.appendChild(nextImg);
-        }
-    } else {    // my top cards
+                      
+    if(oppTopCards != undefined) {          // opponent's top cards
+        topCards = oppTopCards.slice();                                         //.setAttribute('src', `images/${oppTopCards[c]}.jpeg`); not working? 
+    } else {                                // else use my top cards
         for(let i = cardsInLibrary.length-3; i<cardsInLibrary.length; i++) {
             if(i < 0) continue;                                             // if undefined, go to next index
-            let nextImg = new Image();                                 // quicker than document.createElement('img') ?
-            nextImg.setAttribute('src', `images/${cardsInLibrary[i]}.jpeg`);
-            nextImg.classList.add('rounded');
-            nextImg.setAttribute('draggable', true);                           // does this work?
-            nextImg.addEventListener( 'dragstart', (evt) => {
-                selectedCard = evt.currentTarget;                           // @TODO: instead try setData()
-                // allow them to drag to reorder
-                                                                                    // and getData
-            });
-            threeCardDiv.appendChild(nextImg);
+            topCards.push( cardsInLibrary[i] );
         }
+    }
+    for(let c = 0; c < topCards.length; c++) {  
+        let nextImg = document.createElement('img');        // Q: Is...  new Image();   ...quicker than document.createElement('img') ?
+        nextImg.src = `images/${topCards[c]}.jpeg`;
+        nextImg.classList.add('rounded');
+        nextImg.draggable = true;                                           // does setAttr() work too?
+
+        nextImg.addEventListener( 'dragstart', (evt) => {
+            selectedCard = evt.currentTarget;                           
+            evt.dataTransfer.setData('text/plain', nextImg.src);        // capture image src of first card                                                                
+        });
+        // nextImg.addEventListener('dragend', (evt) => {  });
+        nextImg.addEventListener('dragenter', (evt) => {  
+            evt.preventDefault();
+            evt.target.style.opacity = "0.3";
+        });
+        nextImg.addEventListener('dragover', (evt) => {  evt.preventDefault();  });
+        nextImg.addEventListener('dragleave', (evt) => {
+            evt.preventDefault();
+            evt.target.style.opacity = "1";
+        });
+        nextImg.addEventListener('drop', (evt) => {
+            // evt.preventDefault();
+            console.log("retrieving src of grabbed image");
+            let tempSrc = evt.dataTransfer.getData('text/plain');   // src of incoming src (card A)
+            selectedCard.src = evt.target.src;                      // set src of that card (A) to this src (B)
+            evt.target.src = tempSrc;                               // set this src (card B) to that src (A)
+            evt.target.style.opacity = "1";
+            notifyOpponent("reorders top cards");
+        });
+
+        threeCardDiv.appendChild(nextImg);
     }
     view3Modal.showModal();     // SHOW the cards
 
-    // Helper for drag & drop
-    const handleDrop = (card) => {
-        // threeCardDiv.appendChild(card);                                         
-        // console.log("threeCardDiv: " + threeCardDiv.childElementCount);     // this count is increasing
-        // notifyOpponent("reorders top cards");
-    }
-    const handleDragOver = (evt) => {
-        evt.preventDefault();
+    function handleReorder() {            // submit new arrangement from drag & drop
+        // get new order
+        selectedCard = threeCardDiv.firstChild;
+        for(let i = 0; i < topCards.length; i++ ) {                     
+            topCards[i] = selectedCard.src.slice(-8,-5);
+            selectedCard = selectedCard.nextSibling;
+        }
+        // if opp's top 3, send new order
+        if(oppTopCards != undefined && oppTopCards > 0) { 
+            clientSocket.emit("newCardOrder", { ourDraftID: myDraftID, ourMatchID: myMatchID, orderedCards: topCards } );
+            return;
+        }
+        // else if my top 3, recorder my cards
+        let xOfTop3 = cardsInLibrary.length - topCards.length;
+        for(let j = 0; j < topCards.length; j++) {
+            cardsInLibrary[xOfTop3++] = topCards[j];
+        }
     }
 
-    threeCardDiv.addEventListener('dragover', handleDragOver );
-    threeCardDiv.addEventListener('drop', handleDrop(selectedCard) );
-
-    view3Modal.onclose = () => {
-        // remove dragstart event listener too
-        threeCardDiv.removeEventListener('drop', handleDrop);
-        threeCardDiv.removeEventListener('dragover', handleDragOver);   // not able to reference the function
+    function handleShuffle() {              // or shuffle instead
+        if(oppTopCards != undefined && oppTopCards > 0) {
+            clientSocket.emit("pleaseShuffle", {ourDraftID: myDraftID, ourMatchID: myMatchID} );
+            return;
+        }
+        shuffleDeck();
     }
-
-    // SHUFFLE button click
-    shuffle2.addEventListener('click', shuffleDeck);
 
     // REORDER button click
-    reorderBtn.addEventListener('click', () => {
-        // submit new arrangement from drag & drop
-        // if my top 3, recorder my cards
-        // if opp's top 3, send new order
-    });
+    reorderBtn.addEventListener('click', handleReorder);
+
+    // SHUFFLE button click
+    shuffle2.addEventListener('click', handleShuffle);
+
+    view3Modal.onclose = () => {
+        reorderBtn.removeEventListener('click', handleReorder);
+        shuffle2.removeEventListener('click', handleShuffle);
+        console.log("reorder & shuffle event listeners removed; modal closed");
+        // remove dragstart event listener too
+        // threeCardDiv.removeEventListener('drop', handleDrop);
+        // threeCardDiv.removeEventListener('dragover', handleDragOver);   // not able to reference the function
+    }
 };
 
 ////////////////////// BUTTON CLICK LISTENERS ///////////////////////
@@ -788,6 +818,7 @@ document.getElementById('choose-color-btn').addEventListener('click', () => {
             manaFromLotus = false;
         }
         colorPicked.removeAttribute('checked');     // This does not work.  @TODO:  how to reset checked?
+        enableColors();
     }
 });
 
@@ -882,7 +913,7 @@ window.addEventListener( 'keydown', keyEvent => {
 function incQuantity(numElem, letter) { 
     numElem.textContent++;
     if( numElem.style.color != getColor(letter) ) {            // color not already applied...
-        document.getElementById(`${letter}-symbol`).src = `mana/${letter}-active.png`;
+        document.getElementById(`${letter}-symbol`).src = `icons/${letter}-active.png`;
         document.getElementById(`${letter}-symbol`).classList.add('halo');
         numElem.style.color = getColor(letter);
     }
@@ -893,7 +924,7 @@ function decQuantity(numElem, letter) {
         numElem.textContent--;    // if quantity > 0, decrement quantity
         if(numElem.textContent == "0") {                            // if quantity is zero
             document.getElementById(`${letter}-symbol`).classList.remove('halo'); // needed otherwise JS doesn't think it has a classList
-            document.getElementById(`${letter}-symbol`).src = `mana/${letter}.png`;
+            document.getElementById(`${letter}-symbol`).src = `icons/${letter}.png`;
             numElem.style.color = "lightgray";
         }
     }
@@ -908,42 +939,67 @@ function addOneMana( letter ) {     // @TODO: add number as an argument so we do
         case 'w':
             white.textContent++;                                        // increase white mana
             white.style.color = "yellow";
-            sun.src = 'mana/w-active.png';
+            sun.src = 'icons/w-active.png';
             sun.classList.add('halo');
             break;
         case 'u':
             blue.textContent++;                                         // increase blue mana
             blue.style.color = "rgb(0, 170, 255)";
-            droplet.src = 'mana/u-active.png';
+            droplet.src = 'icons/u-active.png';
             droplet.classList.add('halo');
             break;
         case 'b':
             black.textContent++;                                        // increase black mana
             black.style.color = "purple";
-            skull.src = 'mana/b-active.png';
+            skull.src = 'icons/b-active.png';
             skull.classList.add('halo');
             break;
         case 'r':
             red.textContent++;                                          // increase red mana
             red.style.color = "red";
-            flame.src = 'mana/r-active.png';
+            flame.src = 'icons/r-active.png';
             flame.classList.add('halo');
             break;
         case 'g':
             green.textContent++;                                        // increase green mana
             green.style.color = "rgb(64, 255, 47)";
-            tree.src = 'mana/g-active.png';
+            tree.src = 'icons/g-active.png';
             tree.classList.add('halo');
             break;
         case 'c':
             colorless.textContent++;                                    // inc colorless mana
             colorless.style.color = "white";
-            square.src = 'mana/c-active.png';
+            square.src = 'icons/c-active.png';
             square.classList.add('halo');
     }                                                            // @TODO: then pass the quantity here too
     clientSocket.emit("manaAdded", { ourDraftID: myDraftID, ourMatchID: myMatchID, color: letter } );
 }
 
+function disableColors( colorsToDisable ) {
+    for(let c = 0; c < 3; c++ ) {
+        document.getElementById(`radio-${colorsToDisable[c]}`).setAttribute('disabled', true);
+    }
+}
+function enableColors() {
+    let radioBtns = document.querySelectorAll('input[type="radio"]');
+    for( let button of radioBtns ) button.setAttribute('disabled', false);
+}
+
+function manaFromDual(cardNumber) {
+    switch(cardNumber) {
+        case 878:  disableColors( ['white', 'green', 'blue'] );  break;             // badlands      
+        case 879:  disableColors( ['white', 'blue', 'red'] );  break;               // bayou
+        case 880:  disableColors( ['green', 'blue', 'black'] );  break;             // plateau
+        case 881:  disableColors( ['blue', 'red', 'black'] );  break;               // savannah
+        case 882:  disableColors( ['green', 'blue', 'red'] );  break;               // scrubland
+        case 883:  disableColors( ['white', 'blue', 'black'] );  break;             // taiga
+        case 884:  disableColors( ['white', 'red', 'black'] );  break;              // tropical
+        case 885:  disableColors( ['green', 'red', 'black'] );  break;              // tundra
+        case 886:  disableColors( ['white', 'green', 'red'] );  break;              // underground
+        case 887:  disableColors( ['white', 'green', 'black'] );                    // volcanic
+    }
+    colorPicker.showModal(); 
+}
 
 function tapArtifactForMana( cardNumber ) {
     switch(cardNumber) {
@@ -990,9 +1046,9 @@ function resetQuantity(myManaElem, oppManaElem, iconLetter) {          // @TODO:
     myManaElem.style.color = "lightgray";
     oppManaElem.textContent = "0";
     oppManaElem.style.color = "lightgray";
-    document.getElementById(`${iconLetter}-symbol`).src = `mana/${iconLetter}.png`;
+    document.getElementById(`${iconLetter}-symbol`).src = `icons/${iconLetter}.png`;
     document.getElementById(`${iconLetter}-symbol`).classList.remove('halo');   // doc.gebi() needed otherwise JS doesn't think it has a classList
-    document.getElementById(`opp-${iconLetter}-symbol`).src = `mana/${iconLetter}.png`;
+    document.getElementById(`opp-${iconLetter}-symbol`).src = `icons/${iconLetter}.png`;
     document.getElementById(`opp-${iconLetter}-symbol`).classList.remove('halo');   // doc.gebi() needed otherwise JS doesn't think it has a classList
 
 }
@@ -1021,11 +1077,11 @@ function getColor( char ) {
     }
 }
 
+////////////////////// RESET functions for the next game ///////////////////////
+
 function clearChildImages( parentElem ) {
     while(parentElem.lastChild) parentElem.removeChild(parentElem.lastChild);
 }
-
-////////////////////// RESET functions for the next game ///////////////////////
 
 function emptyZones() {                 // could be problematic if event listeners persist
     clearChildImages( hand );
@@ -1072,26 +1128,8 @@ function resetTable() {
     myTurn = false;
     activePlayerName.textContent = "roll ?";
     oppHandCount.textContent = "0";
-    rollBtn.hidden = false;             // need to roll if last game was a draw
+    rollBtn.hidden = false;             // need to roll for next match or if prev game was a draw
 
-}
-
-function prepareNextGame(whoPlaysFirst) {
-    resetTable(); 
-
-    document.cookie = `gamenumber=${++gameNumber}`;   // inc game # and...      
-//        @TODO: score
-    if(whoPlaysFirst == myPlayerID) {           // who plays first depends on who lost
-        iPlayFirst = true;                          // I go first
-        myTurn = true;
-        barPosAsPerc = 37.5;                        // So player will advance right to 1st main phase
-        nextPhaseBtn.setAttribute('disabled', false);
-        activePlayerName.textContent = "MY";
-    }
-    else if(whoPlaysFirst == myOpponentID) {
-        activePlayerName.textContent = "THEIR";
-    }    
-    reloadDeck();
 }
 
 function reloadDeck() {
@@ -1100,6 +1138,28 @@ function reloadDeck() {
     shuffleDeck();
     mullBtn.hidden = false;      // show mulligan button again
     keepBtn.hidden = false;      // show keep button too
+}
+
+function prepareNextGame(whoPlaysFirst) {
+    document.cookie = `gamenumber=${++gameNumber}`;   // inc game # and...  
+    gameNo.textContent = gameNumber;
+
+    resetTable(); 
+    
+//        @TODO: score
+    if(whoPlaysFirst == myPlayerID) {           // who plays first depends on who lost
+        iPlayFirst = true;                          // I go first
+        myTurn = true;
+        barPosAsPerc = 37.5;                        // So 1st player will advance right to 1st main phase
+        nextPhaseBtn.setAttribute('disabled', false);
+        activePlayerName.textContent = "MY";
+        rollBtn.hidden = true;
+    }
+    else if(whoPlaysFirst == myOpponentID) {
+        activePlayerName.textContent = "THEIR";
+        rollBtn.hidden = true;
+    }    
+    reloadDeck();
 }
 
 //////////////////////// Socket Game Event Listeners //////////////////////////
@@ -1205,37 +1265,37 @@ clientSocket.on("manaAdded", (data) => {        // take note of opponent's mana 
         case 'w':
             oppWhite.textContent++;                                       // added White mana
             oppWhite.style.color = getColor(data.color);
-            oppSun.src = 'mana/w-active.png';
+            oppSun.src = 'icons/w-active.png';
             oppSun.classList.add('halo');
             break;
         case 'u':
             oppBlue.textContent++;                                        // added Blue mana
             oppBlue.style.color = getColor(data.color);
-            oppDroplet.src = 'mana/u-active.png';
+            oppDroplet.src = 'icons/u-active.png';
             oppDroplet.classList.add('halo');
             break;
         case 'b':
             oppBlack.textContent++;                                        // added Black mana
             oppBlack.style.color = getColor(data.color);
-            oppSkull.src = 'mana/b-active.png';
+            oppSkull.src = 'icons/b-active.png';
             oppSkull.classList.add('halo');
             break;
         case 'r':
             oppRed.textContent++;                                        // added Red mana
             oppRed.style.color = getColor(data.color);
-            oppFlame.src = 'mana/r-active.png';
+            oppFlame.src = 'icons/r-active.png';
             oppFlame.classList.add('halo');
             break;
         case 'g':
             oppGreen.textContent++;                                        // added GreenoppGreen mana
             oppGreen.style.color = getColor(data.color);
-            oppTree.src = 'mana/g-active.png';
+            oppTree.src = 'icons/g-active.png';
             oppTree.classList.add('halo');
             break;
         case 'c':
             oppColorless.textContent++;                                    // inc colorless mana
             oppColorless.style.color = "white";
-            oppSquare.src = 'mana/c-active.png';
+            oppSquare.src = 'icons/c-active.png';
             oppSquare.classList.add('halo');
     }
 });
@@ -1401,6 +1461,18 @@ clientSocket.on("top3Revealed", (data) => { // topThree
     handleViewTop3(data.topThree);                         //and call up viewtop3 modal
 });
 
+clientSocket.on("newCardOrder", (data) => { // orderedCards
+    let numTotalCards = cardsInLibrary.length;          // e.g.  30
+    let j = 0;  // ordered cards index
+    for(let i = numTotalCards - data.orderedCards.length; i < numTotalCards; i++) {
+        cardsInLibrary[i] = data.orderedCards[j++];       // e.g.  [27] = [0] ... [28] = [1] ... [29] = [2]
+    }
+});
+ 
+clientSocket.on("pleaseShuffle", () => {
+    shuffleDeck();
+});
+
 clientSocket.on("handRevealed", (data) => {          // data.hand is their array of cards in hand
     oppHand.innerHTML = "";
     for(let c = 0; c < data.hand.length; c++) {
@@ -1424,9 +1496,9 @@ clientSocket.on("nextGame", (data) => {      // whoPlaysFirst  (playerID or oppI
 
 clientSocket.on("matchDone", () => {     
     resetTable();
-    // reloadDeck();
+    // reloadDeck();                        // Do these upon getting next pairing
     // matchNumber++;
-    // gameNumber = 1;
+    // gameNumber = 1;  gameNo.textContent = "1";
     clog("Leaving table; awaiting pairings for next round");   
     // switchPages("play", "results");
     document.cookie = "playing=false";  
@@ -1441,4 +1513,3 @@ console.log("stop: " + Date.now());
 //     794, 763, 752, 782, 629, 776, 878, 750, 684, 684,
 //     765, 785, 754, 768, 804, 672, 613, 876, 876, 876, 
 //     892, 892, 892, 892, 889, 889, 889, 889, 889, 889];
-
